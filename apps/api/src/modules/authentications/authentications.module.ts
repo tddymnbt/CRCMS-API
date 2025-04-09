@@ -9,6 +9,7 @@ import { UserOTPLogs } from './entity/otp-logs.entity';
 import { UserAuthentications } from './entity/user-auth.entity';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
+import { EmailService } from 'src/common/email/email.service';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { AuthController } from './auth.controller';
     UsersModule,
   ],
   controllers: [AuthController],
-  providers: [AuthenticationsService, JwtStrategy],
+  providers: [AuthenticationsService, JwtStrategy, EmailService],
   exports: [JwtStrategy, PassportModule],
 })
 export class AuthenticationsModule {}
