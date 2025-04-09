@@ -1,0 +1,3 @@
+echo "Running pre-commit hook..."
+cd apps/api/
+npx lint-staged

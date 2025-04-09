@@ -1,0 +1,21 @@
+services:
+  crcms-api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_PORT=${DATABASE_PORT}
+      - DATABASE_USERNAME=${DATABASE_USERNAME}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_NAME=${DATABASE_NAME}
+    ports:
+      - "3000:3000"  # Map host port 3000 to container port 3000
+    env_file:
+      - ./.env  # Load environment variables from .env file
+    networks:
+      - shared_network
+
+networks:
+  shared_network:
+    driver: bridge
