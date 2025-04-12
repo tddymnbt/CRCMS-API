@@ -39,13 +39,11 @@ export class EmailService {
     const backgroundImagePath = path.join(currentDirectory, 'wood.png');
     const philGoodLogoPath = path.join(
       currentDirectory,
-      'mediflexlogowordmark.png',
+      'lwph_logo_black.png',
     );
     const facebookIconPath = path.join(currentDirectory, 'fb.png');
     const instagramIconPath = path.join(currentDirectory, 'ig.png');
-    const twitterIconPath = path.join(currentDirectory, 'x.png');
     const tiktokIconPath = path.join(currentDirectory, 'tktk.png');
-    const linkedinIconPath = path.join(currentDirectory, 'li.png');
 
     const templatePath = path.join(currentDirectory, `${templateName}.hbs`);
     const templateSource = fs.readFileSync(templatePath, 'utf8');
@@ -65,7 +63,7 @@ export class EmailService {
           cid: 'backgroundimage',
         },
         {
-          filename: 'pg.png',
+          filename: 'lwph_logo_black.png',
           path: philGoodLogoPath,
           cid: 'philgoodlogo',
         },
@@ -80,19 +78,9 @@ export class EmailService {
           cid: 'instagramicon',
         },
         {
-          filename: 'x.png',
-          path: twitterIconPath,
-          cid: 'twittericon',
-        },
-        {
           filename: 'tktk.png',
           path: tiktokIconPath,
           cid: 'tiktokicon',
-        },
-        {
-          filename: 'li.png',
-          path: linkedinIconPath,
-          cid: 'linkedinicon',
         },
       ],
     };

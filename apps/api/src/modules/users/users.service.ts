@@ -73,13 +73,15 @@ export class UsersService {
 
     const user = await this.findOne(ext_id);
 
-    const checkDuplicate = await this.usersRepo.findOne({
-      where: { email: dto.email.trim() },
-    });
-    if (checkDuplicate)
-      throw new ConflictException({
-        status: { success: false, message: 'Email address already exists' },
+    if(dto.email){
+      const checkDuplicate = await this.usersRepo.findOne({
+        where: { email: dto.email.trim() },
       });
+      if (checkDuplicate)
+        throw new ConflictException({
+          status: { success: false, message: 'Email address already exists' },
+        });
+    }
 
     Object.assign(user.data, dto);
     user.data.updated_at = new Date();
