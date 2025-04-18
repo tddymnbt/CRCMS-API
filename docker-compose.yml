@@ -1,5 +1,5 @@
 services:
-  crcms-api:
+  lwphsims-api:
     build:
       context: ./apps/api
       dockerfile: Dockerfile

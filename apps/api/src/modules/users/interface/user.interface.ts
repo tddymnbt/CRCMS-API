@@ -20,7 +20,6 @@ export interface IUser {
   last_name: string;
   email: string;
   is_active: boolean;
-  is_admin: boolean;
   created_at: Date;
   created_by: string;
   updated_at?: Date;

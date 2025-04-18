@@ -27,9 +27,6 @@ export class Users {
   @Column({ default: true })
   is_active: boolean;
 
-  @Column({ default: false })
-  is_admin: boolean;
-
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
