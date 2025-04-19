@@ -9,6 +9,7 @@ import { StatusModule } from './modules/status/status.module';
 import { AuthenticationsModule } from './modules/authentications/authentications.module';
 import { SeederModule } from './common/seeder/seeder.module';
 import { RbacModule } from './modules/rbac/rbac.module';
+import { ClientsModule } from './modules/clients/clients.module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { RbacModule } from './modules/rbac/rbac.module';
     StatusModule,
     AuthenticationsModule,
     SeederModule,
-    RbacModule
+    RbacModule,
+    ClientsModule
   ],
   controllers: [AppController],
   providers: [AppService],

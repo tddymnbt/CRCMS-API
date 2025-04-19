@@ -38,6 +38,7 @@ export class UsersService {
       });
     return { status: { success: true, message: 'User details' }, data: user };
   }
+
   async findOneByEmail(email: string): Promise<IUserResponse> {
     const user = await this.usersRepo.findOne({
       where: { email: email.trim() },
