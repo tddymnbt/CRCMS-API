@@ -12,10 +12,13 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { IUserResponse, IUsersResponse } from './interface/user.interface';
 import { generateUniqueId } from 'src/common/utils/gen-nanoid';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { RbacService } from '../rbac/rbac.service';
 
 @Injectable()
 export class UsersService {
   constructor(
+    private rbacService: RbacService,
+
     @InjectRepository(Users)
     private usersRepo: Repository<Users>,
   ) {}
@@ -73,7 +76,7 @@ export class UsersService {
 
     const user = await this.findOne(ext_id);
 
-    if(dto.email){
+    if (dto.email) {
       const checkDuplicate = await this.usersRepo.findOne({
         where: { email: dto.email.trim() },
       });
@@ -117,7 +120,7 @@ export class UsersService {
   ): Promise<IUserResponse> {
     const user = await this.findOne(ext_id);
 
-    Object.assign(user.data, dto);
+    await this.rbacService.updateUserRole(ext_id, dto.roleName);
     user.data.updated_at = new Date();
     user.data.updated_by = dto.updated_by;
     await this.usersRepo.save(user.data);
@@ -126,5 +129,19 @@ export class UsersService {
       status: { success: true, message: 'User role successfully updated' },
       data: user.data,
     };
+  }
+
+  async updateLastDateLogin(email: string): Promise<void> {
+    const user = await this.usersRepo.findOne({
+      where: { email: email.trim() },
+    });
+
+    if (!user)
+      throw new NotFoundException({
+        status: { success: false, message: 'Invalid email address' },
+      });
+
+    user.last_login = new Date().toString();
+    await this.usersRepo.save(user);
   }
 }

@@ -9,8 +9,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const config = new DocumentBuilder()
-    .setTitle('API Documentation')
-    .setDescription('The API description')
+    .setTitle('LWPH SIMS API Documentation')
+    .setDescription('UAT API for LWPH SIMS')
     .setVersion('1.0')
     .addTag('api')
     .addBearerAuth(
@@ -36,5 +36,6 @@ async function bootstrap() {
   );
 
   await app.listen(3000);
+  console.log('API is now running at http://localhost:3000/api');
 }
 bootstrap();

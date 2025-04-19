@@ -13,8 +13,8 @@ export class UserRoles {
   @Column({ type: 'varchar' })
   user_id: string;
 
-  @Column({ type: 'varchar' })
-  role_id: string;
+  @Column({ type: 'int' })
+  role_id: number;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
