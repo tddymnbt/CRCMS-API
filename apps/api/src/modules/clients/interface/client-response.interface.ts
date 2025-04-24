@@ -1,3 +1,8 @@
+export interface IClientBankDetails {
+  account_name: string;
+  account_no: string;
+  bank?: string;
+}
 
 export interface IClientResponse {
   status: {
@@ -21,7 +26,6 @@ export interface IClientsResponse {
 }
 
 export interface IClient {
-  id: number;
   external_id: string;
   first_name: string;
   middle_name?: string;
@@ -41,6 +45,5 @@ export interface IClient {
   updated_by?: string;
   deleted_at?: Date;
   deleted_by?: string;
+  bank?: IClientBankDetails;
 }
-
-

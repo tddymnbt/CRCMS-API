@@ -1,11 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsBoolean, IsNumber, IsString, IsNotEmpty, Min } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  IsString,
+  IsNotEmpty,
+  Min,
+  IsIn,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class FindClientsDto {
   @ApiProperty({
     required: false,
-    description: 'Search by first name, last name, or email, instagram, facebook',
+    description:
+      'Search by first name, last name, or email, instagram, facebook',
     example: '',
   })
   @IsOptional()
@@ -14,25 +22,26 @@ export class FindClientsDto {
 
   @ApiProperty({
     required: false,
-    default: true,
+    default: 'Y',
     description: 'Filter by active clients',
-    example: true,
+    example: 'Y',
   })
   @IsOptional()
-  @Type(() => Boolean)
-  @IsBoolean()
-  isActive: boolean = true;
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['Y', 'N', 'y', 'n'], { message: 'isActive must be Y or N' })
+  isActive?: string = 'Y';
 
   @ApiProperty({
     required: false,
-    default: false,
+    default: 'N',
     description: 'Filter by consignors',
-    example: false,
+    example: 'N',
   })
   @IsOptional()
-  @Type(() => Boolean)
-  @IsBoolean()
-  isConsignor: boolean = false;
+  @IsString()
+  @IsIn(['Y', 'N', 'y', 'n'], { message: 'isConsignor must be Y or N' })
+  isConsignor?: string;
 
   @ApiProperty({
     required: false,
@@ -78,5 +87,6 @@ export class FindClientsDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @IsIn(['asc', 'ASC', 'desc', 'DESC'], { message: 'orderBy must be ASC or DESC' })
   orderBy: 'asc' | 'desc' = 'asc';
 }

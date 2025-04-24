@@ -1,34 +1,32 @@
 // clients.controller.ts
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ClientsService } from './clients.service';
-import { IClientResponse, IClientsResponse } from './interface/client-response.interface';
+import {
+  IClientResponse,
+  IClientsResponse,
+} from './interface/client-response.interface';
 import { ApiTags } from '@nestjs/swagger';
 import { FindClientsDto } from './dto/find-all-clients.dto';
+import { CreateClientDto } from './dto/create-client.dto';
 
 @ApiTags('clients')
 @Controller('clients')
 export class ClientsController {
   constructor(private readonly service: ClientsService) {}
 
-  // @Post()
-  // create(@Body() dto: CreateClientDto): Promise<IClientResponse> {
-  //   return this.service.create(dto);
-  // }
-
   @Get()
-    async findAll(@Query() query: FindClientsDto): Promise<IClientsResponse> {
-      return this.service.findAll(query);
-    }
-
+  async findAll(@Query() query: FindClientsDto): Promise<IClientsResponse> {
+    return this.service.findAll(query);
+  }
 
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<IClientResponse> {
     return this.service.findOne(id);
+  }
+
+  @Post()
+  async create(@Body() dto: CreateClientDto): Promise<IClientResponse> {
+    return this.service.create(dto);
   }
 
   // @Patch(':id')

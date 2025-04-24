@@ -16,7 +16,7 @@ export class CreateClientBankDTO {
     example: 'TESTACCOUNT001',
   })
   @IsString({ message: 'account_name must be a string.' })
-  @IsNotEmpty({ message: 'craccount_nameated_by is required.' })
+  @IsNotEmpty({ message: 'account_name is required.' })
   account_name: string;
 
   @ApiProperty({
@@ -71,7 +71,7 @@ export class CreateClientDto {
 
   @ApiPropertyOptional({
     description: 'Date of birth',
-    example: '04-01-1999',
+    example: '1999-04-01',
   })
   @IsDateString({}, { message: 'birth_date must be a valid date' })
   @IsNotEmpty({ message: 'birth_date is required.' })
@@ -119,7 +119,7 @@ export class CreateClientDto {
 
   @ApiProperty({
     description: 'Set client as consignor',
-    example: 'true',
+    example: 'false',
   })
   @IsBoolean()
   @IsNotEmpty({ message: 'is_consignor is required.' })
