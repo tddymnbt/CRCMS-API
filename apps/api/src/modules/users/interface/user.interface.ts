@@ -11,6 +11,12 @@ export interface IUsersResponse {
     message: string;
   };
   data?: IUser[];
+  meta?: {
+    page: number;
+    totalNumber: number;
+    totalPages: number;
+    displayPage: number;
+  };
 }
 
 export interface IUser {
@@ -28,3 +34,5 @@ export interface IUser {
   deleted_by?: string;
   last_login?: string;
 }
+
+

@@ -13,6 +13,7 @@ import { IUserResponse, IUsersResponse } from './interface/user.interface';
 import { generateUniqueId } from 'src/common/utils/gen-nanoid';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { RbacService } from '../rbac/rbac.service';
+import { FindUsersDto } from './dto/find-all-users.dto';
 
 @Injectable()
 export class UsersService {
@@ -23,9 +24,41 @@ export class UsersService {
     private usersRepo: Repository<Users>,
   ) {}
 
-  async findAll(): Promise<IUsersResponse> {
-    const users = await this.usersRepo.find();
-    return { status: { success: true, message: 'List of users' }, data: users };
+  async findAll(dto: FindUsersDto): Promise<IUsersResponse> {
+    const {
+      searchValue,
+      isActive = true,
+      pageNumber = 1,
+      displayPerPage = 10,
+      sortBy = 'first_name',
+      orderBy = 'asc',
+    } = dto;
+  
+    const query = this.usersRepo.createQueryBuilder('user');
+  
+    if (searchValue) {
+      query.andWhere(
+        '(user.first_name ILIKE :search OR user.last_name ILIKE :search OR user.email ILIKE :search)',
+        { search: `%${searchValue}%` },
+      );
+    }
+  
+    query.andWhere('user.is_active = :isActive', { isActive });
+    query.orderBy(`user.${sortBy}`, orderBy.toUpperCase() as 'ASC' | 'DESC');
+    query.skip((pageNumber - 1) * displayPerPage).take(displayPerPage);
+  
+    const [users, total] = await query.getManyAndCount();
+  
+    return {
+      status: { success: true, message: 'List of users' },
+      data: users,
+      meta: {
+        page: pageNumber,
+        totalNumber: total,
+        totalPages: Math.ceil(total / displayPerPage),
+        displayPage: displayPerPage,
+      },
+    };
   }
 
   async findOne(ext_id: string): Promise<IUserResponse> {

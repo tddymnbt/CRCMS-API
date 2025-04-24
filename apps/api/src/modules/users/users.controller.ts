@@ -6,7 +6,8 @@ import {
   Param,
   Put,
   Delete,
-  UseGuards,
+  // UseGuards,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -15,18 +16,19 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { DeleteUserDto } from './dto/delete-user.dto';
 import { IUserResponse, IUsersResponse } from './interface/user.interface';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
-import { JwtAuthGuard } from 'src/common/guard/jwt-auth.guard';
+// import { JwtAuthGuard } from 'src/common/guard/jwt-auth.guard';
+import { FindUsersDto } from './dto/find-all-users.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  async findAll(): Promise<IUsersResponse> {
-    return this.usersService.findAll();
+  async findAll(@Query() query: FindUsersDto): Promise<IUsersResponse> {
+    return this.usersService.findAll(query);
   }
 
   @Get(':id')
