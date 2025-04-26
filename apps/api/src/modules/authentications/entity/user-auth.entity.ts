@@ -18,7 +18,6 @@ export class UserAuthentications {
 
   @Column({ type: 'varchar' })
   token_jti: string;
-  ß;
 
   @Column({ type: 'varchar' })
   token_expiry: string;

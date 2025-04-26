@@ -7,6 +7,9 @@ import typeorm from './config/typeorm';
 import { UsersModule } from './modules/users/users.module';
 import { StatusModule } from './modules/status/status.module';
 import { AuthenticationsModule } from './modules/authentications/authentications.module';
+import { SeederModule } from './common/seeder/seeder.module';
+import { RbacModule } from './modules/rbac/rbac.module';
+import { ClientsModule } from './modules/clients/clients.module';
 
 @Module({
   imports: [
@@ -22,6 +25,9 @@ import { AuthenticationsModule } from './modules/authentications/authentications
     UsersModule,
     StatusModule,
     AuthenticationsModule,
+    SeederModule,
+    RbacModule,
+    ClientsModule
   ],
   controllers: [AppController],
   providers: [AppService],

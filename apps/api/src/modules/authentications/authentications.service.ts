@@ -59,7 +59,6 @@ export class AuthenticationsService {
       subject,
     );
 
-
     return {
       status: { success: true, message: 'Email sent' },
     };
@@ -104,6 +103,7 @@ export class AuthenticationsService {
     );
 
     delete user.data.id;
+    await this.usersService.updateLastDateLogin(dto.email);
 
     return {
       status: { success: true, message: 'Successfully validated' },

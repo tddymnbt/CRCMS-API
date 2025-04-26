@@ -3,7 +3,8 @@ import { config as dotenvConfig } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import * as path from 'path';
 
-dotenvConfig({ path: path.join(__dirname, '../../.env') });
+// dotenvConfig({ path: path.join(__dirname, '../../.env') });
+dotenvConfig({ path: path.join(__dirname, '../../../../.env') });
 
 console.log('Database Configuration:');
 console.log(`Host: ${process.env.DATABASE_HOST}`);

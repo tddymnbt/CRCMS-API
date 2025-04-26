@@ -12,17 +12,53 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { IUserResponse, IUsersResponse } from './interface/user.interface';
 import { generateUniqueId } from 'src/common/utils/gen-nanoid';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { RbacService } from '../rbac/rbac.service';
+import { FindUsersDto } from './dto/find-all-users.dto';
 
 @Injectable()
 export class UsersService {
   constructor(
+    private rbacService: RbacService,
+
     @InjectRepository(Users)
     private usersRepo: Repository<Users>,
   ) {}
 
-  async findAll(): Promise<IUsersResponse> {
-    const users = await this.usersRepo.find();
-    return { status: { success: true, message: 'List of users' }, data: users };
+  async findAll(dto: FindUsersDto): Promise<IUsersResponse> {
+    const {
+      searchValue,
+      isActive = true,
+      pageNumber = 1,
+      displayPerPage = 10,
+      sortBy = 'first_name',
+      orderBy = 'asc',
+    } = dto;
+
+    const query = this.usersRepo.createQueryBuilder('user');
+
+    if (searchValue) {
+      query.andWhere(
+        '(user.first_name ILIKE :search OR user.last_name ILIKE :search OR user.email ILIKE :search)',
+        { search: `%${searchValue}%` },
+      );
+    }
+
+    query.andWhere('user.is_active = :isActive', { isActive });
+    query.orderBy(`user.${sortBy}`, orderBy.toUpperCase() as 'ASC' | 'DESC');
+    query.skip((pageNumber - 1) * displayPerPage).take(displayPerPage);
+
+    const [users, total] = await query.getManyAndCount();
+
+    return {
+      status: { success: true, message: 'List of users' },
+      data: users,
+      meta: {
+        page: pageNumber,
+        totalNumber: total,
+        totalPages: Math.ceil(total / displayPerPage),
+        displayPage: displayPerPage,
+      },
+    };
   }
 
   async findOne(ext_id: string): Promise<IUserResponse> {
@@ -35,6 +71,7 @@ export class UsersService {
       });
     return { status: { success: true, message: 'User details' }, data: user };
   }
+
   async findOneByEmail(email: string): Promise<IUserResponse> {
     const user = await this.usersRepo.findOne({
       where: { email: email.trim() },
@@ -73,7 +110,7 @@ export class UsersService {
 
     const user = await this.findOne(ext_id);
 
-    if(dto.email){
+    if (dto.email) {
       const checkDuplicate = await this.usersRepo.findOne({
         where: { email: dto.email.trim() },
       });
@@ -101,6 +138,7 @@ export class UsersService {
       });
 
     const user = await this.findOne(ext_id);
+    user.data.is_active = false;
     user.data.deleted_by = deleted_by;
     await this.usersRepo.save(user.data);
 
@@ -117,7 +155,7 @@ export class UsersService {
   ): Promise<IUserResponse> {
     const user = await this.findOne(ext_id);
 
-    Object.assign(user.data, dto);
+    await this.rbacService.updateUserRole(ext_id, dto.roleName);
     user.data.updated_at = new Date();
     user.data.updated_by = dto.updated_by;
     await this.usersRepo.save(user.data);
@@ -126,5 +164,19 @@ export class UsersService {
       status: { success: true, message: 'User role successfully updated' },
       data: user.data,
     };
+  }
+
+  async updateLastDateLogin(email: string): Promise<void> {
+    const user = await this.usersRepo.findOne({
+      where: { email: email.trim() },
+    });
+
+    if (!user)
+      throw new NotFoundException({
+        status: { success: false, message: 'Invalid email address' },
+      });
+
+    user.last_login = new Date().toString();
+    await this.usersRepo.save(user);
   }
 }
