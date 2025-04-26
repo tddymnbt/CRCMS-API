@@ -1,5 +1,14 @@
 // clients.controller.ts
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import {
   IClientResponse,
@@ -8,6 +17,8 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { FindClientsDto } from './dto/find-all-clients.dto';
 import { CreateClientDto } from './dto/create-client.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
+import { DeleteClientDto } from './dto/delete-client.dto';
 
 @ApiTags('clients')
 @Controller('clients')
@@ -29,27 +40,19 @@ export class ClientsController {
     return this.service.create(dto);
   }
 
-  // @Patch(':id')
-  // update(
-  //   @Param('id') id: number,
-  //   @Body() dto: UpdateClientDto,
-  // ): Promise<IClientResponse> {
-  //   return this.service.update(id, dto);
-  // }
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateClientDto,
+  ): Promise<IClientResponse> {
+    return this.service.update(id, dto);
+  }
 
-  // @Delete(':id')
-  // softDelete(
-  //   @Param('id') id: number,
-  //   @Query('deleted_by') deletedBy: string,
-  // ): Promise<void> {
-  //   return this.service.softDelete(id, deletedBy);
-  // }
-
-  // @Patch(':id/set-consignor')
-  // setAsConsignor(
-  //   @Param('id') id: number,
-  //   @Query('updated_by') updatedBy: string,
-  // ): Promise<IClientResponse> {
-  //   return this.service.setAsConsignor(id, updatedBy);
-  // }
+  @Delete(':id')
+  async remove(
+    @Param('id') id: string,
+    @Body() dto: DeleteClientDto,
+  ): Promise<IClientResponse> {
+    return this.service.remove(id, dto.deleted_by);
+  }
 }

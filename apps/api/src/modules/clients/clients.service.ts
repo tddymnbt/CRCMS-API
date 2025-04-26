@@ -18,6 +18,7 @@ import { FindClientsDto } from './dto/find-all-clients.dto';
 import { CreateClientDto } from './dto/create-client.dto';
 import { generateUniqueId } from 'src/common/utils/gen-nanoid';
 import { ClientBankDetail } from './entities/client-bank.entity';
+import { UpdateClientDto } from './dto/update-client.dto';
 
 @Injectable()
 export class ClientsService {
@@ -69,7 +70,7 @@ export class ClientsService {
 
     const clientsWithBank = await Promise.all(
       clients.map(async (client) => {
-        const { id: _, ...clientSafe } = client as Client;
+        const { id: _, ...clientSafe } = client as Client; // eslint-disable-line @typescript-eslint/no-unused-vars
 
         const bank = await this.clientBankRepo.findOne({
           where: { client_ext_id: client.external_id },
@@ -78,11 +79,11 @@ export class ClientsService {
         let bankSafe: IClientBankDetails | null = null;
         if (bank) {
           const {
-            id: __,
-            client_ext_id,
-            created_at,
-            updated_at,
-            ...safeBank
+            id: __, // eslint-disable-line @typescript-eslint/no-unused-vars
+            client_ext_id, // eslint-disable-line @typescript-eslint/no-unused-vars
+            created_at, // eslint-disable-line @typescript-eslint/no-unused-vars
+            updated_at, // eslint-disable-line @typescript-eslint/no-unused-vars
+            ...safeBank // eslint-disable-line @typescript-eslint/no-unused-vars
           } = bank as ClientBankDetail;
           bankSafe = safeBank;
         }
@@ -161,16 +162,16 @@ export class ClientsService {
     });
 
     // Exclude `id` and other internal fields if needed
-    const { id: _, ...clientSafe } = client as Client;
+    const { id: _, ...clientSafe } = client as Client; // eslint-disable-line @typescript-eslint/no-unused-vars
 
     let bankSafe: IClientBankDetails | null = null;
     if (clientBank) {
       const {
-        id: __,
-        client_ext_id,
-        created_at,
-        updated_at,
-        ...safeBank
+        id: __, // eslint-disable-line @typescript-eslint/no-unused-vars
+        client_ext_id, // eslint-disable-line @typescript-eslint/no-unused-vars
+        created_at, // eslint-disable-line @typescript-eslint/no-unused-vars
+        updated_at, // eslint-disable-line @typescript-eslint/no-unused-vars
+        ...safeBank // eslint-disable-line @typescript-eslint/no-unused-vars
       } = clientBank as ClientBankDetail;
       bankSafe = safeBank;
     }
@@ -260,17 +261,17 @@ export class ClientsService {
     middleName?: string,
     suffix?: string,
   ): Promise<boolean> {
-    const where: any = {
+    const where: Partial<Client> = {
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       birth_date: birthDate,
     };
 
-    if (middleName !== undefined) {
+    if (typeof middleName === 'string' && middleName.trim() !== '') {
       where.middle_name = middleName.trim();
     }
 
-    if (suffix !== undefined) {
+    if (typeof suffix === 'string' && suffix.trim() !== '') {
       where.suffix = suffix.trim();
     }
 
@@ -288,49 +289,86 @@ export class ClientsService {
     return false;
   }
 
-  // async update(id: number, dto: UpdateClientDto): Promise<IClientResponse> {
-  //   const client = await this.clientRepo.findOne({ where: { id } });
-  //   if (!client) throw new NotFoundException('Client not found');
+  async update(ext_id: string, dto: UpdateClientDto): Promise<IClientResponse> {
+    if (!dto.updated_by)
+      throw new BadRequestException({
+        status: { success: false, message: 'Updated By is required' },
+      });
 
-  //   Object.assign(client, dto);
-  //   await this.clientRepo.save(client);
-  //   return this.mapToResponse(client);
-  // }
+    const client: Client = await this.clientRepo.findOne({
+      where: { external_id: ext_id.trim() },
+    });
 
-  // async softDelete(id: number, deletedBy: string): Promise<void> {
-  //   const client = await this.clientRepo.findOne({ where: { id } });
-  //   if (!client) throw new NotFoundException('Client not found');
+    if (!client) {
+      throw new NotFoundException('Client not found');
+    }
 
-  //   client.deleted_at = new Date();
-  //   client.deleted_by = deletedBy;
-  //   await this.clientRepo.save(client);
-  // }
+    // await this.checkDuplicateClient(
+    //   dto.first_name.trim(),
+    //   dto.last_name.trim(),
+    //   dto.birth_date,
+    //   dto.middle_name?.trim() || null,
+    //   dto.suffix?.trim() || null,
+    // );
 
-  // async setAsConsignor(
-  //   id: number,
-  //   updatedBy: string,
-  // ): Promise<IClientResponse> {
-  //   const client = await this.clientRepo.findOne({ where: { id } });
-  //   if (!client) throw new NotFoundException('Client not found');
+    if (dto.email) await this.checkDuplicateEmail(dto.email?.trim());
 
-  //   client.is_consignor = true;
-  //   client.updated_by = updatedBy;
-  //   client.updated_at = new Date();
-  //   await this.clientRepo.save(client);
-  //   return this.mapToResponse(client);
-  // }
+    Object.assign(client, dto);
+    client.updated_at = new Date();
+    client.updated_by = dto.updated_by;
+    await this.clientRepo.save(client);
 
-  // private mapToResponse(c: Client): IClientResponse {
-  //   return {
-  //     id: c.id,
-  //     external_id: c.external_id,
-  //     full_name: [c.first_name, c.middle_name, c.last_name, c.suffix]
-  //       .filter(Boolean)
-  //       .join(' '),
-  //     email: c.email,
-  //     is_consignor: c.is_consignor,
-  //     is_active: c.is_active,
-  //     created_at: c.created_at,
-  //   };
-  // }
+    let clientBank: ClientBankDetail;
+    if (dto.bank) {
+      clientBank = await this.clientBankRepo.findOne({
+        where: { client_ext_id: ext_id.trim() },
+      });
+      Object.assign(clientBank, dto.bank);
+      clientBank.updated_at = new Date();
+      clientBank.updated_by = dto.updated_by;
+      await this.clientBankRepo.save(clientBank);
+    }
+
+    return {
+      status: { success: true, message: 'Client successfully updated' },
+      data: client,
+    };
+  }
+
+  async remove(ext_id: string, deleted_by: string): Promise<IClientResponse> {
+    if (!deleted_by)
+      throw new BadRequestException({
+        status: { success: false, message: 'Deleted By is required' },
+      });
+
+    const client = await this.clientRepo.findOne({
+      where: { external_id: ext_id.trim() },
+    });
+
+    if (!client) {
+      throw new NotFoundException('Client not found');
+    }
+
+    client.is_active = false;
+    client.deleted_by = deleted_by;
+
+    await this.clientRepo.save(client);
+
+    await this.clientRepo.softDelete(client.id);
+
+    const clientBank = await this.clientBankRepo.findOne({
+      where: { client_ext_id: ext_id.trim() },
+    });
+
+    if (clientBank) {
+      clientBank.is_active = false;
+      clientBank.deleted_by = deleted_by;
+      await this.clientBankRepo.save(clientBank);
+      await this.clientBankRepo.softDelete(clientBank.id);
+    }
+
+    return {
+      status: { success: true, message: 'Client successfully deleted.' },
+    };
+  }
 }

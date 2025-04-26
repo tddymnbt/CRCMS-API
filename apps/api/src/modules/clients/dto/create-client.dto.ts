@@ -133,8 +133,12 @@ export class CreateClientDto {
   @IsNotEmpty({ message: 'created_by is required.' })
   created_by: string;
 
+  @ApiProperty({
+    description: 'Client bank details',
+    type: () => CreateClientBankDTO,
+  })
   @IsOptional()
-  @ValidateNested({ each: true })
+  @ValidateNested()
   @Type(() => CreateClientBankDTO)
   bank: CreateClientBankDTO;
 }

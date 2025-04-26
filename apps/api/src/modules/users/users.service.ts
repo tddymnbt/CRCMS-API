@@ -33,22 +33,22 @@ export class UsersService {
       sortBy = 'first_name',
       orderBy = 'asc',
     } = dto;
-  
+
     const query = this.usersRepo.createQueryBuilder('user');
-  
+
     if (searchValue) {
       query.andWhere(
         '(user.first_name ILIKE :search OR user.last_name ILIKE :search OR user.email ILIKE :search)',
         { search: `%${searchValue}%` },
       );
     }
-  
+
     query.andWhere('user.is_active = :isActive', { isActive });
     query.orderBy(`user.${sortBy}`, orderBy.toUpperCase() as 'ASC' | 'DESC');
     query.skip((pageNumber - 1) * displayPerPage).take(displayPerPage);
-  
+
     const [users, total] = await query.getManyAndCount();
-  
+
     return {
       status: { success: true, message: 'List of users' },
       data: users,
@@ -138,6 +138,7 @@ export class UsersService {
       });
 
     const user = await this.findOne(ext_id);
+    user.data.is_active = false;
     user.data.deleted_by = deleted_by;
     await this.usersRepo.save(user.data);
 
