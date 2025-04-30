@@ -33,6 +33,10 @@ export interface IUser {
   deleted_at?: Date;
   deleted_by?: string;
   last_login?: string;
+  role?:{
+    id: string;
+    name: string;
+  }
 }
 
 

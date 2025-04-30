@@ -27,14 +27,34 @@ export class UsersService {
   async findAll(dto: FindUsersDto): Promise<IUsersResponse> {
     const {
       searchValue,
-      isActive = true,
+      isActive = 'Y',
       pageNumber = 1,
       displayPerPage = 10,
       sortBy = 'first_name',
       orderBy = 'asc',
     } = dto;
 
-    const query = this.usersRepo.createQueryBuilder('user');
+    const query = this.usersRepo
+      .createQueryBuilder('user')
+      .leftJoin('user_roles', 'ur', 'ur.user_id = user.external_id')
+      .leftJoin('roles', 'r', 'r.id = ur.role_id')
+      .select([
+        'user.id',
+        'user.external_id',
+        'user.first_name',
+        'user.last_name',
+        'user.email',
+        'user.is_active',
+        'user.created_at',
+        'user.created_by',
+        'user.updated_at',
+        'user.updated_by',
+        'user.deleted_at',
+        'user.deleted_by',
+        'user.last_login',
+        'r.id as role_id',
+        'r.name as role_name',
+      ]);
 
     if (searchValue) {
       query.andWhere(
@@ -43,44 +63,134 @@ export class UsersService {
       );
     }
 
-    query.andWhere('user.is_active = :isActive', { isActive });
+    const active = isActive?.toUpperCase() === 'Y';
+
+    query.andWhere('user.is_active = :isActive', { isActive: active });
     query.orderBy(`user.${sortBy}`, orderBy.toUpperCase() as 'ASC' | 'DESC');
     query.skip((pageNumber - 1) * displayPerPage).take(displayPerPage);
 
-    const [users, total] = await query.getManyAndCount();
+    const { entities, raw } = await query.getRawAndEntities();
+
+    const users = entities.map((user, index) => ({
+      ...user,
+      role: raw[index].role_id
+        ? { id: raw[index].role_id, name: raw[index].role_name }
+        : undefined,
+    }));
 
     return {
       status: { success: true, message: 'List of users' },
       data: users,
       meta: {
         page: pageNumber,
-        totalNumber: total,
-        totalPages: Math.ceil(total / displayPerPage),
+        totalNumber: users.length,
+        totalPages: Math.ceil(users.length / displayPerPage),
         displayPage: displayPerPage,
       },
     };
   }
 
   async findOne(ext_id: string): Promise<IUserResponse> {
-    const user = await this.usersRepo.findOne({
-      where: { external_id: ext_id.trim() },
-    });
+    const user = await this.usersRepo
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user_roles', 'ur', 'ur.user_id = user.external_id')
+      .leftJoinAndSelect('roles', 'r', 'r.id = ur.role_id')
+      .where('user.external_id = :external_id', { external_id: ext_id.trim() })
+      .select([
+        'user.id',
+        'user.external_id',
+        'user.first_name',
+        'user.last_name',
+        'user.email',
+        'user.is_active',
+        'user.created_at',
+        'user.created_by',
+        'user.updated_at',
+        'user.updated_by',
+        'user.deleted_at',
+        'user.deleted_by',
+        'user.last_login',
+        'r.id',
+        'r.name',
+      ])
+      .getRawOne();
+
     if (!user)
       throw new NotFoundException({
-        status: { success: false, message: 'User not ßfound' },
+        status: { success: false, message: 'User not found' },
       });
-    return { status: { success: true, message: 'User details' }, data: user };
+
+    return {
+      status: { success: true, message: 'User details' },
+      data: {
+        id: user.user_id,
+        external_id: user.user_external_id,
+        first_name: user.user_first_name,
+        last_name: user.user_last_name,
+        email: user.user_email,
+        is_active: user.user_is_active,
+        created_at: user.user_created_at,
+        created_by: user.user_created_by,
+        updated_at: user.user_updated_at,
+        updated_by: user.user_updated_by,
+        deleted_at: user.user_deleted_at,
+        deleted_by: user.user_deleted_by,
+        last_login: user.user_last_login,
+        role: user.r_id ? { id: user.r_id, name: user.r_name } : undefined,
+      },
+    };
   }
 
   async findOneByEmail(email: string): Promise<IUserResponse> {
-    const user = await this.usersRepo.findOne({
-      where: { email: email.trim() },
-    });
-    if (!user)
+    const user = await this.usersRepo
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user_roles', 'ur', 'ur.user_id = user.external_id')
+      .leftJoinAndSelect('roles', 'r', 'r.id = ur.role_id')
+      .where('user.email = :email', { email: email.trim() })
+      .select([
+        'user.id',
+        'user.external_id',
+        'user.first_name',
+        'user.last_name',
+        'user.email',
+        'user.is_active',
+        'user.created_at',
+        'user.created_by',
+        'user.updated_at',
+        'user.updated_by',
+        'user.deleted_at',
+        'user.deleted_by',
+        'user.last_login',
+        'r.id',
+        'r.name',
+      ])
+      .getRawOne();
+
+    if (!user) {
       throw new NotFoundException({
         status: { success: false, message: 'Invalid email address' },
       });
-    return { status: { success: true, message: 'User details' }, data: user };
+    }
+
+    return {
+      status: { success: true, message: 'User details' },
+      data: {
+        id: user.user_id,
+        external_id: user.user_external_id,
+        first_name: user.user_first_name,
+        last_name: user.user_last_name,
+        email: user.user_email,
+        is_active: user.user_is_active,
+        created_at: user.user_created_at,
+        created_by: user.user_created_by,
+        updated_at: user.user_updated_at,
+        updated_by: user.user_updated_by,
+        deleted_at: user.user_deleted_at,
+        deleted_by: user.user_deleted_by,
+        last_login: user.user_last_login,
+        role: user.r_id ? { id: user.r_id, name: user.r_name } : undefined,
+      },
+    };
   }
 
   async create(dto: CreateUserDto): Promise<IUserResponse> {
