@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsBoolean, IsNumber, IsString, IsNotEmpty, Min } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  IsString,
+  IsNotEmpty,
+  Min,
+  IsIn,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class FindUsersDto {
@@ -14,14 +21,15 @@ export class FindUsersDto {
 
   @ApiProperty({
     required: false,
-    default: true,
-    description: 'Filter by active users',
-    example: true,
+    default: 'Y',
+    description: 'Filter by active clients',
+    example: 'Y',
   })
   @IsOptional()
-  @Type(() => Boolean)
-  @IsBoolean()
-  isActive: boolean = true;
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['Y', 'N', 'y', 'n'], { message: 'isActive must be Y or N' })
+  isActive?: string = 'Y';
 
   @ApiProperty({
     required: false,
