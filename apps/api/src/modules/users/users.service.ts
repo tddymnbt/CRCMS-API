@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { Users } from './entity/users.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -222,7 +222,7 @@ export class UsersService {
 
     if (dto.email) {
       const checkDuplicate = await this.usersRepo.findOne({
-        where: { email: dto.email.trim() },
+        where: { email: dto.email.trim(), external_id: Not(ext_id.trim()) },
       });
       if (checkDuplicate)
         throw new ConflictException({
