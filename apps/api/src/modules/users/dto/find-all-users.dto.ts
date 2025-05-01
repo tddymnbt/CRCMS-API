@@ -22,7 +22,7 @@ export class FindUsersDto {
   @ApiProperty({
     required: false,
     default: 'Y',
-    description: 'Filter by active clients',
+    description: 'Filter by active users',
     example: 'Y',
   })
   @IsOptional()

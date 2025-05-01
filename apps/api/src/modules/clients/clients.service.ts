@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Not, Repository } from 'typeorm';
 import { Client } from './entities/client.entity';
 import {
   IClient,
@@ -242,18 +242,22 @@ export class ClientsService {
     };
   }
 
-  async checkDuplicateEmail(email: string): Promise<boolean> {
-    const checkDuplicate = await this.clientRepo.findOne({
-      where: { email: email.trim() },
-    });
-    if (checkDuplicate)
+  async checkDuplicateEmail(email: string, ext_id?: string): Promise<boolean> {
+    const where: FindOptionsWhere<Client> = {
+      email: email.trim(),
+      ...(ext_id && { external_id: Not(ext_id.trim()) }),
+    };
+
+    const checkDuplicate = await this.clientRepo.findOne({ where });
+
+    if (checkDuplicate) {
       throw new ConflictException({
         status: { success: false, message: 'Email address already exists' },
       });
+    }
 
     return false;
   }
-
   async checkDuplicateClient(
     firstName: string,
     lastName: string,
@@ -311,7 +315,8 @@ export class ClientsService {
     //   dto.suffix?.trim() || null,
     // );
 
-    if (dto.email) await this.checkDuplicateEmail(dto.email?.trim());
+    if (dto.email)
+      await this.checkDuplicateEmail(dto.email?.trim(), ext_id.trim());
 
     Object.assign(client, dto);
     client.updated_at = new Date();
