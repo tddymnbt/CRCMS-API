@@ -328,10 +328,29 @@ export class ClientsService {
       clientBank = await this.clientBankRepo.findOne({
         where: { client_ext_id: ext_id.trim() },
       });
-      Object.assign(clientBank, dto.bank);
-      clientBank.updated_at = new Date();
-      clientBank.updated_by = dto.updated_by;
-      await this.clientBankRepo.save(clientBank);
+
+      if (!clientBank) {
+        const {
+          account_name = null,
+          account_no = null,
+          bank = null,
+        } = dto.bank || {};
+
+        clientBank = this.clientBankRepo.create({
+          account_name: account_name || null,
+          account_no: account_no || null,
+          bank: bank || null,
+          client_ext_id: ext_id.trim(),
+          created_by: dto.updated_by,
+        });
+
+        await this.clientBankRepo.save(clientBank);
+      } else {
+        Object.assign(clientBank, dto.bank);
+        clientBank.updated_at = new Date();
+        clientBank.updated_by = dto.updated_by;
+        await this.clientBankRepo.save(clientBank);
+      }
     }
 
     return {
