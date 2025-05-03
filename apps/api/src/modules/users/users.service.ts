@@ -301,10 +301,22 @@ export class UsersService {
       throw new NotFoundException({
         status: { success: false, message: 'Invalid email address' },
       });
-    const now = new Date();
-    const gmt8 = new Date(now.getTime() + 8 * 60 * 60 * 1000); // add 8 hours
-    user.last_login = gmt8.toString();
-    await this.usersRepo.save(user);
+      const now = new Date();
+      const gmt8 = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+      
+      const options: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+        timeZone: 'Asia/Manila',
+      };
+      
+      user.last_login = gmt8.toLocaleString('en-US', options);
+      await this.usersRepo.save(user);
 
     return gmt8.toString();
   }
