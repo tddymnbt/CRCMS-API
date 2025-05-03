@@ -65,7 +65,7 @@ export class AuthenticationsService {
   }
 
   async validateLogin(dto: ValidateLoginDto): Promise<IValidateLoginResponse> {
-    const user = await this.usersService.findOneByEmail(dto.email);
+    let user = await this.usersService.findOneByEmail(dto.email);
 
     const otpRecord = await this.otpRepo.findOne({
       where: {
@@ -103,7 +103,8 @@ export class AuthenticationsService {
     );
 
     delete user.data.id;
-    await this.usersService.updateLastDateLogin(dto.email);
+    const lastLoginVal = await this.usersService.updateLastDateLogin(dto.email);
+    user.data.last_login = lastLoginVal;
 
     return {
       status: { success: true, message: 'Successfully validated' },

@@ -292,7 +292,7 @@ export class UsersService {
     };
   }
 
-  async updateLastDateLogin(email: string): Promise<void> {
+  async updateLastDateLogin(email: string): Promise<string> {
     const user = await this.usersRepo.findOne({
       where: { email: email.trim() },
     });
@@ -305,5 +305,7 @@ export class UsersService {
     const gmt8 = new Date(now.getTime() + 8 * 60 * 60 * 1000); // add 8 hours
     user.last_login = gmt8.toString();
     await this.usersRepo.save(user);
+
+    return gmt8.toString();
   }
 }
