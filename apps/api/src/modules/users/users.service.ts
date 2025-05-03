@@ -301,8 +301,9 @@ export class UsersService {
       throw new NotFoundException({
         status: { success: false, message: 'Invalid email address' },
       });
-
-    user.last_login = new Date(dayjs().tz('Asia/Manila').format()).toString();
+    const now = new Date();
+    const gmt8 = new Date(now.getTime() + 8 * 60 * 60 * 1000); // add 8 hours
+    user.last_login = gmt8.toString();
     await this.usersRepo.save(user);
   }
 }
