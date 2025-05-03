@@ -14,6 +14,12 @@ import { generateUniqueId } from 'src/common/utils/gen-nanoid';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { RbacService } from '../rbac/rbac.service';
 import { FindUsersDto } from './dto/find-all-users.dto';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 @Injectable()
 export class UsersService {
@@ -296,7 +302,7 @@ export class UsersService {
         status: { success: false, message: 'Invalid email address' },
       });
 
-    user.last_login = new Date().toString();
+    user.last_login = dayjs().tz('Asia/Manila').toDate().toString();
     await this.usersRepo.save(user);
   }
 }
