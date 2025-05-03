@@ -202,9 +202,18 @@ export class UsersService {
         status: { success: false, message: 'Email address already exists' },
       });
 
+    const extId = generateUniqueId(10);
+
     const user = this.usersRepo.create(dto);
-    user.external_id = generateUniqueId(10);
+    user.external_id = extId;
     await this.usersRepo.save(user);
+
+    //Assign default role, staff
+    const assignRoleDto: UpdateUserRoleDto = {
+      roleName: 'Staff',
+      updated_by: extId,
+    };
+    await this.updateUserRole(extId, assignRoleDto);
 
     return {
       status: { success: true, message: 'User successfully created' },
@@ -263,12 +272,13 @@ export class UsersService {
     ext_id: string,
     dto: UpdateUserRoleDto,
   ): Promise<IUserResponse> {
-    const user = await this.findOne(ext_id);
+    let user = await this.findOne(ext_id);
 
     await this.rbacService.updateUserRole(ext_id, dto.roleName);
     user.data.updated_at = new Date();
     user.data.updated_by = dto.updated_by;
     await this.usersRepo.save(user.data);
+    user = await this.findOne(ext_id);
 
     return {
       status: { success: true, message: 'User role successfully updated' },
