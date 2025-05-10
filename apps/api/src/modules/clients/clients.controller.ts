@@ -14,7 +14,7 @@ import {
   IClientResponse,
   IClientsResponse,
 } from './interface/client-response.interface';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FindClientsDto } from './dto/find-all-clients.dto';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
@@ -27,22 +27,26 @@ export class ClientsController {
   constructor(private readonly service: ClientsService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Find all clients' })
   async findAll(@Query() query: FindClientsDto): Promise<IClientsResponse> {
     console.log(query);
     return this.service.findAll(query);
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Find specific client' })
   async findOne(@Param('id') id: string): Promise<IClientResponse> {
     return this.service.findOne(id);
   }
 
   @Post()
+  @ApiOperation({ summary: 'Create client' })
   async create(@Body() dto: CreateClientDto): Promise<IClientResponse> {
     return this.service.create(dto);
   }
 
   @Put(':id')
+  @ApiOperation({ summary: 'Update client' })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateClientDto,
@@ -51,6 +55,7 @@ export class ClientsController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete client' })
   async remove(
     @Param('id') id: string,
     @Body() dto: DeleteClientDto,
@@ -59,6 +64,7 @@ export class ClientsController {
   }
 
   @Post('celebrant')
+  @ApiOperation({ summary: 'Get client celebrants' })
   async findCelebrants(
     @Body() dto: BirthMonthParamDto,
   ): Promise<IClientsResponse> {
