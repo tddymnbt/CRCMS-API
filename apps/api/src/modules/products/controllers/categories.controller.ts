@@ -9,13 +9,15 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CategoriesService } from '../services/categories.service';
+import {
+  IProductMiscResponse,
+  IProductMiscsResponse,
+} from '../interfaces/p-misc.interface';
+import { CreateProductMiscDto } from '../dtos/create-p-misc.dto';
+import { UpdateProductMiscDto } from '../dtos/update-p-misc.dto';
+import { DeleteProductMiscDto } from '../dtos/delete-p-misc.dto';
 
-import { CreateProductCategoryDto } from '../dtos/create-p-misc.dto';
-import { UpdateProductCategoryDto } from '../dtos/update-p-misc.dto';
-import { DeleteProductCategoryDto } from '../dtos/delete-p-misc.dto';
-import { IProductMiscResponse, IProductMiscsResponse } from '../interfaces/p-misc.interface';
-
-@ApiTags('categories')
+@ApiTags('product categories')
 @Controller('categories')
 export class CategoriesController {
   constructor(private readonly service: CategoriesService) {}
@@ -35,7 +37,7 @@ export class CategoriesController {
   @Post()
   @ApiOperation({ summary: 'Create product category' })
   async create(
-    @Body() dto: CreateProductCategoryDto,
+    @Body() dto: CreateProductMiscDto,
   ): Promise<IProductMiscResponse> {
     return this.service.create(dto);
   }
@@ -44,7 +46,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Update product category' })
   async update(
     @Param('id') id: string,
-    @Body() dto: UpdateProductCategoryDto,
+    @Body() dto: UpdateProductMiscDto,
   ): Promise<IProductMiscResponse> {
     return this.service.update(id, dto);
   }
@@ -53,7 +55,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Delete product category' })
   async remove(
     @Param('id') id: string,
-    @Body() dto: DeleteProductCategoryDto,
+    @Body() dto: DeleteProductMiscDto,
   ): Promise<IProductMiscResponse> {
     return this.service.remove(id, dto.deleted_by);
   }

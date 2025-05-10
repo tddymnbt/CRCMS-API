@@ -1,7 +1,7 @@
 import { IsNotEmpty, IsString, Length } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class DeleteProductCategoryDto {
+export class DeleteProductMiscDto {
   @ApiProperty({ description: 'Username of the deleter', maxLength: 100 })
   @IsString({ message: 'created_by must be a string' })
   @IsNotEmpty({ message: 'created_by is required' })

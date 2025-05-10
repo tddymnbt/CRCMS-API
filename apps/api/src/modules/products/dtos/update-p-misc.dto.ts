@@ -2,7 +2,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, Length } from 'class-validator';
 
-export class UpdateProductCategoryDto {
+export class UpdateProductMiscDto {
   @ApiProperty({ description: 'New name for the product category', maxLength: 100 })
   @IsString({ message: 'name must be a string' })
   @IsNotEmpty({ message: 'name is required' })

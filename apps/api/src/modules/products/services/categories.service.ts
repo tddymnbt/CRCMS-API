@@ -7,24 +7,23 @@ import {
 import { ProductCategory } from '../entities/product-category.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, ILike, Not, Repository } from 'typeorm';
-
-import { CreateProductCategoryDto } from '../dtos/create-p-misc.dto';
 import { generateUniqueId } from 'src/common/utils/gen-nanoid';
-import { UpdateProductCategoryDto } from '../dtos/update-p-misc.dto';
 import {
   IProductMiscResponse,
   IProductMiscsResponse,
 } from '../interfaces/p-misc.interface';
+import { CreateProductMiscDto } from '../dtos/create-p-misc.dto';
+import { UpdateProductMiscDto } from '../dtos/update-p-misc.dto';
 
 @Injectable()
 export class CategoriesService {
   constructor(
     @InjectRepository(ProductCategory)
-    private productCategoryRepo: Repository<ProductCategory>,
+    private miscRepo: Repository<ProductCategory>,
   ) {}
 
   async findAll(): Promise<IProductMiscsResponse> {
-    const query = this.productCategoryRepo
+    const query = this.miscRepo
       .createQueryBuilder('p_category')
       .where('p_category.deleted_at IS NULL')
       .orderBy('p_category.created_at', 'ASC')
@@ -50,7 +49,7 @@ export class CategoriesService {
   }
 
   async findOne(ext_id: string): Promise<IProductMiscResponse> {
-    const productCategory = await this.productCategoryRepo.findOne({
+    const productCategory = await this.miscRepo.findOne({
       where: { external_id: ext_id.trim() },
     });
 
@@ -66,16 +65,16 @@ export class CategoriesService {
     };
   }
 
-  async create(dto: CreateProductCategoryDto): Promise<IProductMiscResponse> {
+  async create(dto: CreateProductMiscDto): Promise<IProductMiscResponse> {
     await this.checkDuplicateName(dto.name.trim());
 
     const extId = generateUniqueId(10);
 
-    const pCategory = this.productCategoryRepo.create({
+    const pCategory = this.miscRepo.create({
       ...dto,
       external_id: extId,
     });
-    await this.productCategoryRepo.save(pCategory);
+    await this.miscRepo.save(pCategory);
 
     const { id, ...categoryWithoutId } = pCategory;
     return {
@@ -89,14 +88,14 @@ export class CategoriesService {
 
   async update(
     ext_id: string,
-    dto: UpdateProductCategoryDto,
+    dto: UpdateProductMiscDto,
   ): Promise<IProductMiscResponse> {
     if (!dto.updated_by)
       throw new BadRequestException({
         status: { success: false, message: 'Updated By is required' },
       });
 
-    const pCategory: ProductCategory = await this.productCategoryRepo.findOne({
+    const pCategory: ProductCategory = await this.miscRepo.findOne({
       where: { external_id: ext_id.trim() },
     });
 
@@ -109,7 +108,7 @@ export class CategoriesService {
     Object.assign(pCategory, dto);
     pCategory.updated_at = new Date();
     pCategory.updated_by = dto.updated_by;
-    await this.productCategoryRepo.save(pCategory);
+    await this.miscRepo.save(pCategory);
 
     const { id, ...categoryWithoutId } = pCategory;
 
@@ -131,7 +130,7 @@ export class CategoriesService {
         status: { success: false, message: 'Deleted By is required' },
       });
 
-    const pCategory = await this.productCategoryRepo.findOne({
+    const pCategory = await this.miscRepo.findOne({
       where: { external_id: ext_id.trim() },
     });
 
@@ -141,9 +140,9 @@ export class CategoriesService {
 
     pCategory.deleted_by = deleted_by;
 
-    await this.productCategoryRepo.save(pCategory);
+    await this.miscRepo.save(pCategory);
 
-    await this.productCategoryRepo.softDelete(pCategory.id);
+    await this.miscRepo.softDelete(pCategory.id);
 
     return {
       status: {
@@ -159,7 +158,7 @@ export class CategoriesService {
       ...(ext_id && { external_id: Not(ext_id.trim()) }),
     };
 
-    const checkDuplicate = await this.productCategoryRepo.findOne({ where });
+    const checkDuplicate = await this.miscRepo.findOne({ where });
 
     if (checkDuplicate) {
       throw new ConflictException({
