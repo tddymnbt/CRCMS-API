@@ -1,17 +1,17 @@
 
-export interface IProductCategoryResponse {
+export interface IProductMiscResponse {
   status: {
     success: boolean;
     message: string;
   };
-  data?: IProductCategory;
+  data?: IProductMisc;
 }
-export interface IProductCategoriesResponse {
+export interface IProductMiscsResponse {
   status: {
     success: boolean;
     message: string;
   };
-  data?: IProductCategory[];
+  data?: IProductMisc[];
   meta?: {
     page: number;
     totalNumber: number;
@@ -20,7 +20,7 @@ export interface IProductCategoriesResponse {
   };
 }
 
-export interface IProductCategory {
+export interface IProductMisc{
   external_id: string;
   name: string;
   created_at: Date;

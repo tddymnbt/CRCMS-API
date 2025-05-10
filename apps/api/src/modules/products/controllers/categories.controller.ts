@@ -9,13 +9,11 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CategoriesService } from '../services/categories.service';
-import {
-  IProductCategoriesResponse,
-  IProductCategoryResponse,
-} from '../interfaces/category.interface';
-import { CreateProductCategoryDto } from '../dtos/create-p-category.dto';
-import { UpdateProductCategoryDto } from '../dtos/update-p-category.dto';
-import { DeleteProductCategoryDto } from '../dtos/delete-p-category.dto';
+
+import { CreateProductCategoryDto } from '../dtos/create-p-misc.dto';
+import { UpdateProductCategoryDto } from '../dtos/update-p-misc.dto';
+import { DeleteProductCategoryDto } from '../dtos/delete-p-misc.dto';
+import { IProductMiscResponse, IProductMiscsResponse } from '../interfaces/p-misc.interface';
 
 @ApiTags('categories')
 @Controller('categories')
@@ -24,13 +22,13 @@ export class CategoriesController {
 
   @Get()
   @ApiOperation({ summary: 'Find all product categories' })
-  async findAll(): Promise<IProductCategoriesResponse> {
+  async findAll(): Promise<IProductMiscsResponse> {
     return this.service.findAll();
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get specific product category' })
-  async findOne(@Param('id') id: string): Promise<IProductCategoryResponse> {
+  async findOne(@Param('id') id: string): Promise<IProductMiscResponse> {
     return this.service.findOne(id);
   }
 
@@ -38,7 +36,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Create product category' })
   async create(
     @Body() dto: CreateProductCategoryDto,
-  ): Promise<IProductCategoryResponse> {
+  ): Promise<IProductMiscResponse> {
     return this.service.create(dto);
   }
 
@@ -47,7 +45,7 @@ export class CategoriesController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateProductCategoryDto,
-  ): Promise<IProductCategoryResponse> {
+  ): Promise<IProductMiscResponse> {
     return this.service.update(id, dto);
   }
 
@@ -56,7 +54,7 @@ export class CategoriesController {
   async remove(
     @Param('id') id: string,
     @Body() dto: DeleteProductCategoryDto,
-  ): Promise<IProductCategoryResponse> {
+  ): Promise<IProductMiscResponse> {
     return this.service.remove(id, dto.deleted_by);
   }
 }

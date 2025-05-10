@@ -7,13 +7,14 @@ import {
 import { ProductCategory } from '../entities/product-category.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, ILike, Not, Repository } from 'typeorm';
-import {
-  IProductCategoriesResponse,
-  IProductCategoryResponse,
-} from '../interfaces/category.interface';
-import { CreateProductCategoryDto } from '../dtos/create-p-category.dto';
+
+import { CreateProductCategoryDto } from '../dtos/create-p-misc.dto';
 import { generateUniqueId } from 'src/common/utils/gen-nanoid';
-import { UpdateProductCategoryDto } from '../dtos/update-p-category.dto';
+import { UpdateProductCategoryDto } from '../dtos/update-p-misc.dto';
+import {
+  IProductMiscResponse,
+  IProductMiscsResponse,
+} from '../interfaces/p-misc.interface';
 
 @Injectable()
 export class CategoriesService {
@@ -22,7 +23,7 @@ export class CategoriesService {
     private productCategoryRepo: Repository<ProductCategory>,
   ) {}
 
-  async findAll(): Promise<IProductCategoriesResponse> {
+  async findAll(): Promise<IProductMiscsResponse> {
     const query = this.productCategoryRepo
       .createQueryBuilder('p_category')
       .where('p_category.deleted_at IS NULL')
@@ -48,7 +49,7 @@ export class CategoriesService {
     };
   }
 
-  async findOne(ext_id: string): Promise<IProductCategoryResponse> {
+  async findOne(ext_id: string): Promise<IProductMiscResponse> {
     const productCategory = await this.productCategoryRepo.findOne({
       where: { external_id: ext_id.trim() },
     });
@@ -65,9 +66,7 @@ export class CategoriesService {
     };
   }
 
-  async create(
-    dto: CreateProductCategoryDto,
-  ): Promise<IProductCategoryResponse> {
+  async create(dto: CreateProductCategoryDto): Promise<IProductMiscResponse> {
     await this.checkDuplicateName(dto.name.trim());
 
     const extId = generateUniqueId(10);
@@ -80,7 +79,10 @@ export class CategoriesService {
 
     const { id, ...categoryWithoutId } = pCategory;
     return {
-      status: { success: true, message: 'Product category successfully created' },
+      status: {
+        success: true,
+        message: 'Product category successfully created',
+      },
       data: categoryWithoutId,
     };
   }
@@ -88,7 +90,7 @@ export class CategoriesService {
   async update(
     ext_id: string,
     dto: UpdateProductCategoryDto,
-  ): Promise<IProductCategoryResponse> {
+  ): Promise<IProductMiscResponse> {
     if (!dto.updated_by)
       throw new BadRequestException({
         status: { success: false, message: 'Updated By is required' },
@@ -123,7 +125,7 @@ export class CategoriesService {
   async remove(
     ext_id: string,
     deleted_by: string,
-  ): Promise<IProductCategoryResponse> {
+  ): Promise<IProductMiscResponse> {
     if (!deleted_by)
       throw new BadRequestException({
         status: { success: false, message: 'Deleted By is required' },
