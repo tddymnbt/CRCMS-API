@@ -59,6 +59,10 @@ async function bootstrap() {
     }),
   );
 
+  app.getHttpAdapter().get('/', (_req, res) => {
+    res.redirect(301, '/api');
+  });
+
   await app.listen(3000);
   console.log('API is now running at http://localhost:3000/api');
 }
