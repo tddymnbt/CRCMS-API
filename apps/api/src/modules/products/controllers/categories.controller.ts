@@ -18,7 +18,7 @@ import { UpdateProductMiscDto } from '../dtos/update-p-misc.dto';
 import { DeleteProductMiscDto } from '../dtos/delete-p-misc.dto';
 
 @ApiTags('product categories')
-@Controller('categories')
+@Controller('products/categories')
 export class CategoriesController {
   constructor(private readonly service: CategoriesService) {}
 
