@@ -18,7 +18,7 @@ import { DeleteProductMiscDto } from '../dtos/delete-p-misc.dto';
 import { AuthenticatorsService } from '../services/authenticators.service';
 
 @ApiTags('product authenticators')
-@Controller('authenticators')
+@Controller('products/authenticators')
 export class AuthenticatorsController {
   constructor(private readonly service: AuthenticatorsService) {}
 

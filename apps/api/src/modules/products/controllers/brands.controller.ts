@@ -18,7 +18,7 @@ import { DeleteProductMiscDto } from '../dtos/delete-p-misc.dto';
 import { BrandsService } from '../services/brands.service';
 
 @ApiTags('product brands')
-@Controller('brands')
+@Controller('products/brands')
 export class BrandsController {
   constructor(private readonly service: BrandsService) {}
 
