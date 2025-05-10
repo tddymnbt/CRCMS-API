@@ -47,3 +47,17 @@ export interface IClient {
   deleted_by?: string;
   bank?: IClientBankDetails;
 }
+
+export interface IClientCelebrantsResponse {
+  status: {
+    success: boolean;
+    message: string;
+  };
+  data?: IClient[];
+  meta?: {
+    page: number;
+    totalNumber: number;
+    totalPages: number;
+    displayPage: number;
+  };
+}

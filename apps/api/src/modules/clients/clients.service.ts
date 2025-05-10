@@ -19,6 +19,7 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { generateUniqueId } from 'src/common/utils/gen-nanoid';
 import { ClientBankDetail } from './entities/client-bank.entity';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { BirthMonthParamDto } from './dto/get-celebrant.dto';
 
 @Injectable()
 export class ClientsService {
@@ -152,6 +153,7 @@ export class ClientsService {
     });
 
     if (!client) {
+      console.log('finddone');
       throw new NotFoundException({
         status: { success: false, message: 'Client not found' },
       });
@@ -304,6 +306,7 @@ export class ClientsService {
     });
 
     if (!client) {
+      console.log('update');
       throw new NotFoundException('Client not found');
     }
 
@@ -370,6 +373,7 @@ export class ClientsService {
     });
 
     if (!client) {
+      console.log('remove');
       throw new NotFoundException('Client not found');
     }
 
@@ -393,6 +397,51 @@ export class ClientsService {
 
     return {
       status: { success: true, message: 'Client successfully deleted.' },
+    };
+  }
+
+  async getClientsByBirthMonth(
+    dto: BirthMonthParamDto,
+  ): Promise<IClientsResponse> {
+    const { month = 1 } = dto;
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+
+    const query = this.clientRepo
+      .createQueryBuilder('client')
+      .where('EXTRACT(MONTH FROM client.birth_date) = :month', { month })
+      .andWhere('client.is_active = true')
+      .andWhere('client.deleted_at IS NULL')
+      .orderBy('EXTRACT(DAY FROM client.birth_date)', 'ASC')
+      .skip((1 - 1) * 1000)
+      .take(1000);
+
+    const [clients, total] = await query.getManyAndCount();
+
+    return {
+      status: {
+        success: true,
+        message: `List of celebrant/s for the month of ${months[month - 1]}`,
+      },
+      data: clients,
+      meta: {
+        page: 1,
+        totalNumber: total,
+        totalPages: Math.ceil(total / 1000),
+        displayPage: 1000,
+      },
     };
   }
 }

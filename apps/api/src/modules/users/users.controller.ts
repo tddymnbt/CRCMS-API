@@ -57,7 +57,7 @@ export class UsersController {
     return this.usersService.remove(id, dto.deleted_by);
   }
 
-  @Put('/update-role/:id')
+  @Put('update-role/:id')
   async updateRole(
     @Param('id') id: string,
     @Body() dto: UpdateUserRoleDto,
