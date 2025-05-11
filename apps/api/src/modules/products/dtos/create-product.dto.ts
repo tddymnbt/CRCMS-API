@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsDateString,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -138,9 +139,12 @@ export class CreateProductDto {
   @IsNumber({}, { message: 'Consignor Selling Price must be a number' })
   consignor_selling_price?: number;
 
-  @ApiProperty({ example: '01-01-2001, required: false' })
-  @IsOptional()
-  @IsString({ message: 'Consigned date must be a string' })
+  @ApiProperty({
+    example: '1999-04-01',
+    required: false,
+  })
+  @IsDateString({}, { message: 'consigned_date must be a valid date' })
+  @IsNotEmpty({ message: 'consigned_date is required.' })
   consigned_date?: string;
 
   @ApiProperty({ example: 'admin_user' })
