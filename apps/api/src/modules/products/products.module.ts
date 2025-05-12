@@ -11,9 +11,23 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductCategory } from './entities/product-category.entity';
 import { ProductBrand } from './entities/product-brand.entity';
 import { ProductAuthenticator } from './entities/product-authenticator.entity';
+import { Product } from './entities/product.entity';
+import { ProductCondition } from './entities/product-condition.entity';
+import { Stock } from './entities/stock.entity';
+import { ClientsModule } from '../clients/clients.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ProductCategory, ProductBrand, ProductAuthenticator])],
+  imports: [
+    TypeOrmModule.forFeature([
+      ProductCategory,
+      ProductBrand,
+      ProductAuthenticator,
+      Product,
+      ProductCondition,
+      Stock,
+    ]),
+    ClientsModule,
+  ],
   controllers: [
     ProductsController,
     CategoriesController,
