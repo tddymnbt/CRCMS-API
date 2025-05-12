@@ -9,5 +9,6 @@ import { ClientBankDetail } from './entities/client-bank.entity';
   imports: [TypeOrmModule.forFeature([Client, ClientBankDetail])],
   controllers: [ClientsController],
   providers: [ClientsService],
+  exports: [ClientsService],
 })
 export class ClientsModule {}

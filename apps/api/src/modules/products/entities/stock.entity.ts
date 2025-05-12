@@ -21,7 +21,7 @@ import {
     @Column({ type: 'boolean', default: false })
     is_consigned: boolean;
   
-    @Column({ type: 'timestamp' })
+    @Column({ type: 'timestamp', nullable: true })
     consigned_date: Date;
   
     @Column({ type: 'int', default: 0 })

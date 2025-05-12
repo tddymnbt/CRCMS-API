@@ -144,6 +144,7 @@ export class CreateProductDto {
     required: false,
   })
   @IsDateString({}, { message: 'consigned_date must be a valid date' })
+  @IsOptional()
   @IsNotEmpty({ message: 'consigned_date is required.' })
   consigned_date?: string;
 

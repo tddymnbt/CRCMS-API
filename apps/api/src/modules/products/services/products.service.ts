@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Product } from '../entities/product.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, ILike, Not, Repository } from 'typeorm';
@@ -36,29 +40,31 @@ export class ProductsService {
     // private readonly stockMovementRepo: Repository<StockMovement>,
   ) {}
 
-  async validateMisc(dto: CreateProductDto): Promise<IPMiscsResponse> {
-    if (dto) {
-      const cRes = await this.pCategoryService.findOne(
-        dto.category_ext_id.trim(),
-      );
-      const bRes = await this.pBrandService.findOne(dto.brand_ext_id.trim());
-      const aRes = await this.pAuthenticatorService.findOne(
-        dto.auth_ext_id.trim(),
-      );
+  async validateMisc(
+    category_ext_id: string,
+    brand_ext_id: string,
+    auth_ext_id?: string,
+    consignor_ext_id?: string,
+  ): Promise<IPMiscsResponse> {
+    const [category, brand] = await Promise.all([
+      this.pCategoryService.findOne(category_ext_id.trim()),
+      this.pBrandService.findOne(brand_ext_id.trim()),
+    ]);
 
-      let conRes = null;
-      if (dto.is_consigned && dto.consignor_ext_id) {
-        conRes = await this.clientService.findOne(dto.consignor_ext_id.trim());
-      }
+    const authenticator = auth_ext_id
+      ? await this.pAuthenticatorService.findOne(auth_ext_id.trim())
+      : null;
 
-      return {
-        category_data: cRes.data,
-        brand_data: bRes.data,
-        authenticator_data: aRes.data,
-        consignor_data: conRes.data,
-      };
-    }
-    return null;
+    const consignor = consignor_ext_id
+      ? await this.clientService.findOne(consignor_ext_id.trim())
+      : null;
+
+    return {
+      category_data: category.data,
+      brand_data: brand.data,
+      authenticator_data: authenticator?.data ?? null,
+      consignor_data: consignor?.data ?? null,
+    };
   }
 
   async checkDuplicateProduct(
@@ -86,8 +92,12 @@ export class ProductsService {
   }
 
   async createProduct(dto: CreateProductDto): Promise<IProductResponse> {
-    console.log(dto);
-    const miscVals = await this.validateMisc(dto);
+    const miscVals = await this.validateMisc(
+      dto.category_ext_id,
+      dto.brand_ext_id,
+      dto.auth_ext_id,
+      dto.consignor_ext_id,
+    );
     await this.checkDuplicateProduct(
       dto.name,
       dto.category_ext_id,
@@ -155,56 +165,106 @@ export class ProductsService {
         success: true,
         message: 'Product successfully created',
       },
-      data: {
-        external_id: product.external_id,
-        category: {
-          code: product.category_ext_id,
-          name: miscVals.category_data.name,
-        },
-        brand: {
-          code: product.brand_ext_id,
-          name: miscVals.brand_data.name,
-        },
-        name: product.name,
-        material: product.material,
-        hardware: product.hardware,
-        code: product.code,
-        measurement: product.measurement,
-        model: product.model,
-        authenticator: {
-          code: product.auth_ext_id,
-          name: miscVals.authenticator_data.name,
-        },
-        inclusions: product.inclusion,
-        images: product.images,
-        condition: {
-          interior: condition.interior,
-          exterior: condition.exterior,
-          overall: condition.overall,
-          description: condition.description,
-        },
-        cost: product.cost,
-        price: product.price,
-        stock: {
-          min_qty: stock.min_qty,
-          qty_in_stock: stock.avail_qty,
-          sold_stock: stock.sold_qty,
-        },
-        is_consigned: product.is_consigned,
-        consignor: {
-          code: product.consignor_ext_id,
-          first_name: miscVals.consignor_data.first_name,
-          last_name: miscVals.consignor_data.last_name,
-        },
-        consignor_selling_price: product.consignor_selling_price,
-        consigned_date: stock.consigned_date,
-        created_at: product.created_at,
-        created_by: product.created_by,
-        updated_at: product.updated_at,
-        updated_by: product.updated_by,
-        deleted_at: product.deleted_at,
-        deleted_by: product.deleted_by,
+      data: this.buildProductResponse(product, condition, stock, miscVals),
+    };
+  }
+
+  async findOne(external_id: string): Promise<IProductResponse> {
+    const product = await this.productRepo.findOne({
+      where: { external_id },
+    });
+
+    if (!product) {
+      throw new NotFoundException({
+        status: { success: false, message: 'Product not found' },
+      });
+    }
+
+    const [condition, stock, miscVals] = await Promise.all([
+      this.conditionRepo.findOne({ where: { product_ext_id: external_id } }),
+      this.stockRepo.findOne({ where: { product_ext_id: external_id } }),
+      this.validateMisc(
+        product.category_ext_id,
+        product.brand_ext_id,
+        product.auth_ext_id,
+        product.consignor_ext_id,
+      ),
+    ]);
+
+    return {
+      status: {
+        success: true,
+        message: 'Product found',
       },
+      data: this.buildProductResponse(product, condition, stock, miscVals),
+    };
+  }
+
+  private buildProductResponse(
+    product: Product,
+    condition: ProductCondition,
+    stock: Stock,
+    miscVals: IPMiscsResponse,
+  ): IProductResponse['data'] | null {
+    if (!miscVals) return null;
+
+    return {
+      external_id: product.external_id,
+      category: {
+        code: product.category_ext_id,
+        name: miscVals.category_data?.name ?? null,
+      },
+      brand: {
+        code: product.brand_ext_id,
+        name: miscVals.brand_data?.name ?? null,
+      },
+      name: product.name,
+      material: product.material,
+      hardware: product.hardware,
+      code: product.code,
+      measurement: product.measurement,
+      model: product.model,
+      authenticator: product.auth_ext_id
+        ? {
+            code: product.auth_ext_id,
+            name: miscVals.authenticator_data?.name ?? null,
+          }
+        : null,
+      inclusions: product.inclusion,
+      images: product.images,
+      condition: condition
+        ? {
+            interior: condition.interior,
+            exterior: condition.exterior,
+            overall: condition.overall,
+            description: condition.description,
+          }
+        : null,
+      cost: product.cost,
+      price: product.price,
+      stock: stock
+        ? {
+            min_qty: stock.min_qty,
+            qty_in_stock: stock.avail_qty,
+            sold_stock: stock.sold_qty,
+          }
+        : null,
+      is_consigned: product.is_consigned,
+      consignor: product.is_consigned
+        ? {
+            code: product.consignor_ext_id,
+            first_name: miscVals.consignor_data?.first_name ?? null,
+            last_name: miscVals.consignor_data?.last_name ?? null,
+          }
+        : null,
+      consignor_selling_price: product.consignor_selling_price,
+      consigned_date: stock?.consigned_date ?? null,
+      created_at: product.created_at,
+      created_by: product.created_by,
+      updated_at: product.updated_at,
+      updated_by: product.updated_by,
+      deleted_at: product.deleted_at,
+      deleted_by: product.deleted_by,
     };
   }
 }

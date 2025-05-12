@@ -14,6 +14,7 @@ import { ProductAuthenticator } from './entities/product-authenticator.entity';
 import { Product } from './entities/product.entity';
 import { ProductCondition } from './entities/product-condition.entity';
 import { Stock } from './entities/stock.entity';
+import { ClientsModule } from '../clients/clients.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { Stock } from './entities/stock.entity';
       ProductCondition,
       Stock,
     ]),
+    ClientsModule,
   ],
   controllers: [
     ProductsController,
