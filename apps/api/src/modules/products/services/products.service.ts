@@ -92,6 +92,12 @@ export class ProductsService {
   }
 
   async createProduct(dto: CreateProductDto): Promise<IProductResponse> {
+    if (!dto.is_consigned) {
+      dto.consignor_ext_id = null;
+      dto.consignor_selling_price = null;
+      dto.consigned_date = null;
+    }
+
     const miscVals = await this.validateMisc(
       dto.category_ext_id,
       dto.brand_ext_id,
