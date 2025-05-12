@@ -1,14 +1,20 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ProductsService } from '../services/products.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateProductDto } from '../dtos/create-product.dto';
-import { IProductResponse } from '../interfaces/product.interface';
+import { IProductResponse, IProductsResponse } from '../interfaces/product.interface';
+import { FindProductsDto } from '../dtos/find-all-products.dto';
 
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
   constructor(private readonly service: ProductsService) {}
 
+  @Get()
+  @ApiOperation({ summary: 'Find all products' })
+  async findAll(@Query() query: FindProductsDto): Promise<IProductsResponse> {
+    return this.service.findAll(query);
+  }
   @Get(':id')
   @ApiOperation({ summary: 'Find specific product' })
   async findOne(@Param('id') id: string): Promise<IProductResponse> {

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -15,9 +16,12 @@ import { BrandsService } from './brands.service';
 import { AuthenticatorsService } from './authenticators.service';
 import {
   IPMiscsResponse,
+  IProduct,
   IProductResponse,
+  IProductsResponse,
 } from '../interfaces/product.interface';
 import { ClientsService } from 'src/modules/clients/clients.service';
+import { FindProductsDto } from '../dtos/find-all-products.dto';
 
 @Injectable()
 export class ProductsService {
@@ -96,6 +100,27 @@ export class ProductsService {
       dto.consignor_ext_id = null;
       dto.consignor_selling_price = null;
       dto.consigned_date = null;
+    } else {
+      const throwIfMissing = (field: any, message: string) => {
+        if (!field) {
+          throw new BadRequestException({
+            status: { success: false, message },
+          });
+        }
+      };
+
+      throwIfMissing(
+        dto.consignor_ext_id,
+        'Consignor external ID is required if product is consigned.',
+      );
+      throwIfMissing(
+        dto.consignor_selling_price,
+        'Consignor selling price is required if product is consigned.',
+      );
+      throwIfMissing(
+        dto.consigned_date,
+        'Consigned date is required if product is consigned.',
+      );
     }
 
     const miscVals = await this.validateMisc(
@@ -172,6 +197,79 @@ export class ProductsService {
         message: 'Product successfully created',
       },
       data: this.buildProductResponse(product, condition, stock, miscVals),
+    };
+  }
+
+  async findAll(dto: FindProductsDto): Promise<IProductsResponse> {
+    const {
+      searchValue,
+      isConsigned,
+      pageNumber,
+      displayPerPage,
+      sortBy,
+      orderBy,
+    } = dto;
+
+    const query = this.productRepo.createQueryBuilder('product');
+
+    console.log(dto.searchValue);
+    // Apply search filter
+    if (searchValue) {
+      query.andWhere(
+        `(product.name ILIKE :search OR product.material ILIKE :search OR product.hardware ILIKE :search OR product.code ILIKE :search OR product.measurement ILIKE :search OR product.model ILIKE :search)`,
+        { search: `%${searchValue}%` },
+      );
+    }
+
+    // Filter by consigned
+    if (isConsigned) {
+      query.andWhere('product.is_consigned = :isConsigned', {
+        isConsigned: ['Y', 'y'].includes(isConsigned),
+      });
+    }
+
+    // Pagination and sorting
+    query
+      .orderBy(`product.${sortBy}`, orderBy.toUpperCase() as 'ASC' | 'DESC')
+      .skip((pageNumber - 1) * displayPerPage)
+      .take(displayPerPage);
+
+    const [products, totalCount] = await query.getManyAndCount();
+
+    // Fetch related data
+    const results: IProduct[] = await Promise.all(
+      products.map(async (product) => {
+        const [condition, stock, miscVals] = await Promise.all([
+          this.conditionRepo.findOne({
+            where: { product_ext_id: product.external_id },
+          }),
+          this.stockRepo.findOne({
+            where: { product_ext_id: product.external_id },
+          }),
+          this.validateMisc(
+            product.category_ext_id,
+            product.brand_ext_id,
+            product.auth_ext_id,
+            product.consignor_ext_id,
+          ),
+        ]);
+
+        return this.buildProductResponse(product, condition, stock, miscVals);
+      }),
+    );
+
+    return {
+      status: {
+        success: true,
+        message: 'Products fetched successfully',
+      },
+      data: results,
+      meta: {
+        page: pageNumber,
+        totalNumber: totalCount,
+        totalPages: Math.ceil(totalCount / displayPerPage),
+        displayPage: displayPerPage,
+      },
     };
   }
 
