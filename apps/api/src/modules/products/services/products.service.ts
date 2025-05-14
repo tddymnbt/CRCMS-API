@@ -210,10 +210,10 @@ export class ProductsService {
   async updateProductStock(
     dto: UpdateProductStockDto,
   ): Promise<IProductResponse> {
-    const { stock_ext_id, type, qty, updated_by } = dto;
+    const { stock_ext_id, type, qty, updated_by, cost } = dto;
 
     const stock = await this.stockRepo.findOne({
-      where: { external_id: stock_ext_id },
+      where: { external_id: stock_ext_id.trim() },
     });
 
     if (!stock) {
@@ -221,6 +221,18 @@ export class ProductsService {
         status: {
           success: false,
           message: 'Stock not found',
+        },
+      });
+    }
+    const product = await this.productRepo.findOne({
+      where: { external_id: stock.product_ext_id.trim() },
+    });
+
+    if (!product) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Product not found',
         },
       });
     }
@@ -237,6 +249,7 @@ export class ProductsService {
 
     if (isIncrease) {
       stock.avail_qty += qty;
+      product.cost = cost;
     } else if (type.toLowerCase() === 'decrease') {
       if (stock.avail_qty < qty) {
         throw new BadRequestException({
@@ -252,7 +265,11 @@ export class ProductsService {
     stock.updated_by = updated_by;
     stock.updated_at = new Date();
 
+    product.updated_by = updated_by;
+    product.updated_at = new Date();
+    
     await this.stockRepo.save(stock);
+    await this.productRepo.save(product);
 
     // Stock movement logging
     await this.stockMovementService.logStockMovement({

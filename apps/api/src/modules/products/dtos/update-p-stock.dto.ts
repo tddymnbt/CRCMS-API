@@ -20,6 +20,10 @@ export class UpdateProductStockDto {
   @IsNotEmpty({ message: 'Quantity in stock is required' })
   qty: number;
 
+  @ApiProperty({ example: 100 })
+  @IsNumber({}, { message: 'Cost must be a number' })
+  cost: number;
+
   @ApiProperty({ example: 'admin_user' })
   @IsString({ message: 'Updated By must be a string' })
   @IsNotEmpty({ message: 'Updated By is required' })
