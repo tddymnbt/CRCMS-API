@@ -2,8 +2,12 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ProductsService } from '../services/products.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateProductDto } from '../dtos/create-product.dto';
-import { IProductResponse, IProductsResponse } from '../interfaces/product.interface';
+import {
+  IProductResponse,
+  IProductsResponse,
+} from '../interfaces/product.interface';
 import { FindProductsDto } from '../dtos/find-all-products.dto';
+import { UpdateProductStockDto } from '../dtos/update-p-stock.dto';
 
 @ApiTags('products')
 @Controller('products')
@@ -25,5 +29,13 @@ export class ProductsController {
   @ApiOperation({ summary: 'Create product' })
   async create(@Body() dto: CreateProductDto): Promise<IProductResponse> {
     return this.service.createProduct(dto);
+  }
+
+  @Post('update-stock')
+  @ApiOperation({ summary: 'Update product stock' })
+  async updateProductStock(
+    @Body() dto: UpdateProductStockDto,
+  ): Promise<IProductResponse> {
+    return this.service.updateProductStock(dto);
   }
 }
