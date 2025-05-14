@@ -22,6 +22,8 @@ import {
 } from '../interfaces/product.interface';
 import { ClientsService } from 'src/modules/clients/clients.service';
 import { FindProductsDto } from '../dtos/find-all-products.dto';
+import { StockMovementService } from './stock-movement.service';
+import { UpdateProductStockDto } from '../dtos/update-p-stock.dto';
 
 @Injectable()
 export class ProductsService {
@@ -30,6 +32,7 @@ export class ProductsService {
     private readonly pBrandService: BrandsService,
     private readonly pAuthenticatorService: AuthenticatorsService,
     private readonly clientService: ClientsService,
+    private readonly stockMovementService: StockMovementService,
 
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
@@ -39,9 +42,6 @@ export class ProductsService {
 
     @InjectRepository(Stock)
     private readonly stockRepo: Repository<Stock>,
-
-    // @InjectRepository(StockMovement)
-    // private readonly stockMovementRepo: Repository<StockMovement>,
   ) {}
 
   async validateMisc(
@@ -162,8 +162,6 @@ export class ProductsService {
       created_by: dto.created_by,
     });
 
-    await this.productRepo.save(product);
-
     // Create Product Condition
     const condition = this.conditionRepo.create({
       external_id: condition_ext_id,
@@ -174,8 +172,6 @@ export class ProductsService {
       description: dto.condition.description,
       created_by: dto.created_by,
     });
-
-    await this.conditionRepo.save(condition);
 
     // Create Stock
     const stock = this.stockRepo.create({
@@ -189,7 +185,18 @@ export class ProductsService {
       created_by: dto.created_by,
     });
 
+    await this.productRepo.save(product);
+    await this.conditionRepo.save(condition);
     await this.stockRepo.save(stock);
+
+    //Stock movement
+    await this.stockMovementService.logStockMovement({
+      stockExtId: stock_ext_id,
+      type: 'INBOUND',
+      source: 'NEW PRODUCT ADDED',
+      qty: dto.stock.qty_in_stock,
+      createdBy: dto.created_by,
+    });
 
     return {
       status: {
@@ -197,6 +204,70 @@ export class ProductsService {
         message: 'Product successfully created',
       },
       data: this.buildProductResponse(product, condition, stock, miscVals),
+    };
+  }
+
+  async updateProductStock(
+    dto: UpdateProductStockDto,
+  ): Promise<IProductResponse> {
+    const { stock_ext_id, type, qty, updated_by } = dto;
+
+    const stock = await this.stockRepo.findOne({
+      where: { external_id: stock_ext_id },
+    });
+
+    if (!stock) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Stock not found',
+        },
+      });
+    }
+
+    if (qty <= 0) {
+      throw new BadRequestException({
+        status: {
+          success: false,
+          message: 'Quantity must be greater than 0',
+        },
+      });
+    }
+    const isIncrease = type.toLowerCase() === 'increase';
+
+    if (isIncrease) {
+      stock.avail_qty += qty;
+    } else if (type.toLowerCase() === 'decrease') {
+      if (stock.avail_qty < qty) {
+        throw new BadRequestException({
+          status: {
+            success: false,
+            message: 'Not enough available quantity to decrease',
+          },
+        });
+      }
+      stock.avail_qty -= qty;
+    }
+
+    stock.updated_by = updated_by;
+    stock.updated_at = new Date();
+
+    await this.stockRepo.save(stock);
+
+    // Stock movement logging
+    await this.stockMovementService.logStockMovement({
+      stockExtId: stock_ext_id,
+      type: isIncrease ? 'INBOUND' : 'OUTBOUND',
+      source: 'STOCK ADJUSTMENT',
+      qty,
+      createdBy: updated_by,
+    });
+
+    return {
+      status: {
+        success: true,
+        message: 'Stock updated successfully',
+      },
     };
   }
 

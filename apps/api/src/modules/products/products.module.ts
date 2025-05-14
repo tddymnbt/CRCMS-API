@@ -15,6 +15,8 @@ import { Product } from './entities/product.entity';
 import { ProductCondition } from './entities/product-condition.entity';
 import { Stock } from './entities/stock.entity';
 import { ClientsModule } from '../clients/clients.module';
+import { StockMovementService } from './services/stock-movement.service';
+import { StockMovement } from './entities/stock-movement.entity';
 
 @Module({
   imports: [
@@ -25,6 +27,7 @@ import { ClientsModule } from '../clients/clients.module';
       Product,
       ProductCondition,
       Stock,
+      StockMovement,
     ]),
     ClientsModule,
   ],
@@ -39,12 +42,14 @@ import { ClientsModule } from '../clients/clients.module';
     CategoriesService,
     BrandsService,
     AuthenticatorsService,
+    StockMovementService,
   ],
   exports: [
     ProductsService,
     CategoriesService,
     BrandsService,
     AuthenticatorsService,
+    StockMovementService,
   ],
 })
 export class ProductsModule {}
