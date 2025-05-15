@@ -55,7 +55,13 @@ export class StockMovementService {
     stock_ext_id: string,
     dto: FindProductTransactionsDto,
   ): Promise<IProductTransactionsResponse> {
-    const { searchValue, pageNumber, displayPerPage, sortBy, orderBy } = dto;
+    const {
+      searchValue,
+      pageNumber,
+      displayPerPage,
+      sortBy = 'created_at',
+      orderBy = 'desc',
+    } = dto;
 
     // 1. Check if stock exists
     const stockExists = await this.stockRepo.findOne({
@@ -80,10 +86,10 @@ export class StockMovementService {
         'sm.type AS movement_type',
         'sm.source AS source',
         `CASE 
-          WHEN sm.type = 'INBOUND' THEN s.avail_qty - sm.qty
-          WHEN sm.type = 'OUTBOUND' THEN s.avail_qty + sm.qty
-          ELSE NULL
-        END AS qty_before`,
+        WHEN sm.type = 'INBOUND' THEN s.avail_qty - sm.qty
+        WHEN sm.type = 'OUTBOUND' THEN s.avail_qty + sm.qty
+        ELSE NULL
+      END AS qty_before`,
         'sm.qty AS change',
         's.avail_qty AS qty_after',
       ])
@@ -93,14 +99,17 @@ export class StockMovementService {
 
     if (searchValue) {
       query.andWhere(
-        `
+        `(
         sm.type ILIKE :search
         OR sm.source ILIKE :search
         OR sm.qty::text ILIKE :search
-      `,
+      )`,
         { search: `%${searchValue}%` },
       );
     }
+
+    // Clone the query for accurate total count
+    const countQuery = query.clone();
 
     query
       .orderBy(`sm.${sortBy}`, orderBy.toUpperCase() as 'ASC' | 'DESC')
@@ -109,10 +118,10 @@ export class StockMovementService {
 
     const [productMovements, totalCount] = await Promise.all([
       query.getRawMany(),
-      query.getCount(),
+      countQuery.getCount(),
     ]);
 
-    // 3. Return with empty data if no movements
+    // 3. Return mapped results
     const results: IProductTransaction[] = productMovements.map((row) => ({
       stock_id: row.stock_id,
       product_id: row.product_id,
