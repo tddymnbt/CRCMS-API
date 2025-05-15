@@ -29,7 +29,6 @@ export class ClientsController {
   @Get()
   @ApiOperation({ summary: 'Find all clients' })
   async findAll(@Query() query: FindClientsDto): Promise<IClientsResponse> {
-    console.log(query);
     return this.service.findAll(query);
   }
 

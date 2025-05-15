@@ -1,4 +1,3 @@
-// clients.service.ts
 import {
   BadRequestException,
   ConflictException,
@@ -153,7 +152,6 @@ export class ClientsService {
     });
 
     if (!client) {
-      console.log('finddone');
       throw new NotFoundException({
         status: { success: false, message: 'Client not found' },
       });
@@ -306,7 +304,6 @@ export class ClientsService {
     });
 
     if (!client) {
-      console.log('update');
       throw new NotFoundException('Client not found');
     }
 
@@ -373,7 +370,6 @@ export class ClientsService {
     });
 
     if (!client) {
-      console.log('remove');
       throw new NotFoundException('Client not found');
     }
 
