@@ -24,6 +24,7 @@ import { ClientsService } from 'src/modules/clients/clients.service';
 import { FindProductsDto } from '../dtos/find-all-products.dto';
 import { StockMovementService } from './stock-movement.service';
 import { UpdateProductStockDto } from '../dtos/update-p-stock.dto';
+import { UpdateProductDto } from '../dtos/update-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -203,14 +204,22 @@ export class ProductsService {
         success: true,
         message: 'Product successfully created',
       },
-      data: this.buildProductResponse(product, condition, stock, miscVals),
+      data: this.buildProductResponse(
+        stock_ext_id,
+        product,
+        condition,
+        stock,
+        miscVals,
+      ),
     };
   }
 
   async updateProductStock(
+    ext_id: string,
     dto: UpdateProductStockDto,
   ): Promise<IProductResponse> {
-    const { stock_ext_id, type, qty, updated_by, cost } = dto;
+    const { type, qty, updated_by, cost } = dto;
+    const stock_ext_id = ext_id.trim();
 
     const stock = await this.stockRepo.findOne({
       where: { external_id: stock_ext_id.trim() },
@@ -267,7 +276,7 @@ export class ProductsService {
 
     product.updated_by = updated_by;
     product.updated_at = new Date();
-    
+
     await this.stockRepo.save(stock);
     await this.productRepo.save(product);
 
@@ -285,6 +294,200 @@ export class ProductsService {
         success: true,
         message: 'Stock updated successfully',
       },
+    };
+  }
+
+  async update(
+    ext_id: string,
+    dto: UpdateProductDto,
+  ): Promise<IProductResponse> {
+    if (!dto.updated_by)
+      throw new BadRequestException({
+        status: { success: false, message: 'Updated By is required' },
+      });
+
+    if (!dto.is_consigned) {
+      dto.consignor_ext_id = null;
+      dto.consignor_selling_price = null;
+      dto.consigned_date = null;
+    } else {
+      const throwIfMissing = (field: any, message: string) => {
+        if (!field) {
+          throw new BadRequestException({
+            status: { success: false, message },
+          });
+        }
+      };
+
+      throwIfMissing(
+        dto.consignor_ext_id,
+        'Consignor external ID is required if product is consigned.',
+      );
+      throwIfMissing(
+        dto.consignor_selling_price,
+        'Consignor selling price is required if product is consigned.',
+      );
+      throwIfMissing(
+        dto.consigned_date,
+        'Consigned date is required if product is consigned.',
+      );
+    }
+
+    const stock = await this.stockRepo.findOne({
+      where: { external_id: ext_id.trim() },
+    });
+
+    if (!stock) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Stock not found',
+        },
+      });
+    }
+    const product = await this.productRepo.findOne({
+      where: { external_id: stock.product_ext_id.trim() },
+    });
+
+    if (!product) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Product not found',
+        },
+      });
+    }
+
+    const miscVals = await this.validateMisc(
+      dto.category_ext_id,
+      dto.brand_ext_id,
+      dto.auth_ext_id,
+      dto.consignor_ext_id,
+    );
+    await this.checkDuplicateProduct(
+      dto.name,
+      dto.category_ext_id,
+      dto.brand_ext_id,
+      product.external_id,
+    );
+
+    Object.assign(product, dto);
+    product.updated_at = new Date();
+    product.updated_by = dto.updated_by;
+    await this.productRepo.save(product);
+
+    let productCondition: ProductCondition;
+    if (dto.condition) {
+      productCondition = await this.conditionRepo.findOne({
+        where: { product_ext_id: stock.product_ext_id.trim() },
+      });
+
+      if (!productCondition) {
+        const {
+          interior = null,
+          exterior = null,
+          overall = null,
+          description = null,
+        } = dto.condition || {};
+
+        productCondition = this.conditionRepo.create({
+          external_id: generateUniqueId(10),
+          product_ext_id: product.external_id,
+          interior: parseFloat(interior),
+          exterior: parseFloat(exterior),
+          overall: parseFloat(overall),
+          description: description,
+          created_by: dto.updated_by,
+        });
+
+        await this.conditionRepo.save(productCondition);
+      } else {
+        Object.assign(productCondition, dto.condition);
+        productCondition.updated_at = new Date();
+        productCondition.updated_by = dto.updated_by;
+        await this.conditionRepo.save(productCondition);
+      }
+    }
+
+    if (dto.is_consigned) {
+      stock.is_consigned = dto.is_consigned;
+      stock.consigned_date = dto.consigned_date
+        ? new Date(dto.consigned_date)
+        : null;
+      stock.updated_at = new Date();
+      stock.updated_by = dto.updated_by;
+
+      await this.stockRepo.save(stock);
+    }
+
+    return {
+      status: {
+        success: true,
+        message: 'Product successfully updated',
+      },
+      data: this.buildProductResponse(
+        stock.external_id,
+        product,
+        productCondition,
+        stock,
+        miscVals,
+      ),
+    };
+  }
+
+  async remove(ext_id: string, deleted_by: string): Promise<IProductResponse> {
+    if (!deleted_by)
+      throw new BadRequestException({
+        status: { success: false, message: 'Deleted By is required' },
+      });
+
+    const stock = await this.stockRepo.findOne({
+      where: { external_id: ext_id.trim() },
+    });
+
+    if (!stock) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Stock not found',
+        },
+      });
+    }
+    const product = await this.productRepo.findOne({
+      where: { external_id: stock.product_ext_id.trim() },
+    });
+
+    if (!product) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Product not found',
+        },
+      });
+    }
+
+    stock.deleted_by = deleted_by;
+    product.deleted_by = deleted_by;
+
+    await this.stockRepo.save(stock);
+    await this.stockRepo.softDelete(stock.id);
+
+    await this.productRepo.save(product);
+    await this.productRepo.softDelete(product.id);
+
+    const productCondition = await this.conditionRepo.findOne({
+      where: { product_ext_id: stock.product_ext_id.trim() },
+    });
+
+    if (productCondition) {
+      productCondition.deleted_by = deleted_by;
+
+      await this.conditionRepo.save(productCondition);
+      await this.conditionRepo.softDelete(productCondition.id);
+    }
+
+    return {
+      status: { success: true, message: 'Product successfully deleted.' },
     };
   }
 
@@ -342,7 +545,13 @@ export class ProductsService {
           ),
         ]);
 
-        return this.buildProductResponse(product, condition, stock, miscVals);
+        return this.buildProductResponse(
+          stock.external_id,
+          product,
+          condition,
+          stock,
+          miscVals,
+        );
       }),
     );
 
@@ -362,19 +571,33 @@ export class ProductsService {
   }
 
   async findOne(external_id: string): Promise<IProductResponse> {
+    const stock = await this.stockRepo.findOne({
+      where: { external_id: external_id.trim() },
+    });
+
+    if (!stock) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Stock not found',
+        },
+      });
+    }
     const product = await this.productRepo.findOne({
-      where: { external_id },
+      where: { external_id: stock.product_ext_id.trim() },
     });
 
     if (!product) {
       throw new NotFoundException({
-        status: { success: false, message: 'Product not found' },
+        status: {
+          success: false,
+          message: 'Product not found',
+        },
       });
     }
 
-    const [condition, stock, miscVals] = await Promise.all([
+    const [condition, miscVals] = await Promise.all([
       this.conditionRepo.findOne({ where: { product_ext_id: external_id } }),
-      this.stockRepo.findOne({ where: { product_ext_id: external_id } }),
       this.validateMisc(
         product.category_ext_id,
         product.brand_ext_id,
@@ -388,11 +611,18 @@ export class ProductsService {
         success: true,
         message: 'Product found',
       },
-      data: this.buildProductResponse(product, condition, stock, miscVals),
+      data: this.buildProductResponse(
+        stock.external_id,
+        product,
+        condition,
+        stock,
+        miscVals,
+      ),
     };
   }
 
   private buildProductResponse(
+    stock_ext_id: string,
     product: Product,
     condition: ProductCondition,
     stock: Stock,
@@ -401,7 +631,8 @@ export class ProductsService {
     if (!miscVals) return null;
 
     return {
-      external_id: product.external_id,
+      stock_external_id: stock_ext_id.trim(),
+      product_external_id: product.external_id,
       category: {
         code: product.category_ext_id,
         name: miscVals.category_data?.name ?? null,

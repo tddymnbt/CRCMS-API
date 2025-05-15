@@ -2,11 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class UpdateProductStockDto {
-  @ApiProperty({ example: '' })
-  @IsString({ message: 'Stock External ID must be a string' })
-  @IsNotEmpty({ message: 'Stock External ID is required' })
-  stock_ext_id: string;
-
   @ApiProperty({ example: 'increase' })
   @IsString({ message: 'type must be a string' })
   @IsNotEmpty({ message: 'type is required' })

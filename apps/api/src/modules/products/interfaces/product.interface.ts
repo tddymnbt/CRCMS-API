@@ -23,7 +23,8 @@ export interface IProductsResponse {
 }
 
 export interface IProduct {
-  external_id: string;
+  stock_external_id: string;
+  product_external_id: string;
   category: {
     code: string;
     name: string;

@@ -1,9 +1,15 @@
 // stock-movement.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StockMovement } from '../entities/stock-movement.entity';
 import { generateUniqueId } from 'src/common/utils/gen-nanoid';
+import { FindProductTransactionsDto } from '../dtos/find-p-trans.dto';
+import {
+  IProductTransaction,
+  IProductTransactionsResponse,
+} from '../interfaces/p-trans.interface';
+import { Stock } from '../entities/stock.entity';
 
 export type StockMovementType = 'INBOUND' | 'OUTBOUND';
 export type StockMovementSource =
@@ -27,6 +33,9 @@ export class StockMovementService {
   constructor(
     @InjectRepository(StockMovement)
     private readonly stockMovementRepo: Repository<StockMovement>,
+
+    @InjectRepository(Stock)
+    private readonly stockRepo: Repository<Stock>,
   ) {}
 
   async logStockMovement(params: LogStockMovementParams): Promise<void> {
@@ -40,5 +49,92 @@ export class StockMovementService {
     });
 
     await this.stockMovementRepo.save(movement);
+  }
+
+  async getProductTransaction(
+    stock_ext_id: string,
+    dto: FindProductTransactionsDto,
+  ): Promise<IProductTransactionsResponse> {
+    const { searchValue, pageNumber, displayPerPage, sortBy, orderBy } = dto;
+
+    // 1. Check if stock exists
+    const stockExists = await this.stockRepo.findOne({
+      where: { external_id: stock_ext_id },
+    });
+
+    if (!stockExists) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Stock not found',
+        },
+      });
+    }
+
+    // 2. Query stock movements
+    const query = this.stockMovementRepo
+      .createQueryBuilder('sm')
+      .select([
+        's.external_id AS stock_id',
+        'p.external_id AS product_id',
+        'sm.type AS movement_type',
+        'sm.source AS source',
+        `CASE 
+          WHEN sm.type = 'INBOUND' THEN s.avail_qty - sm.qty
+          WHEN sm.type = 'OUTBOUND' THEN s.avail_qty + sm.qty
+          ELSE NULL
+        END AS qty_before`,
+        'sm.qty AS change',
+        's.avail_qty AS qty_after',
+      ])
+      .leftJoin('stocks', 's', 'sm.stock_ext_id = s.external_id')
+      .leftJoin('products', 'p', 's.product_ext_id = p.external_id')
+      .where('sm.stock_ext_id = :stock_ext_id', { stock_ext_id });
+
+    if (searchValue) {
+      query.andWhere(
+        `
+        sm.type ILIKE :search
+        OR sm.source ILIKE :search
+        OR sm.qty::text ILIKE :search
+      `,
+        { search: `%${searchValue}%` },
+      );
+    }
+
+    query
+      .orderBy(`sm.${sortBy}`, orderBy.toUpperCase() as 'ASC' | 'DESC')
+      .skip((pageNumber - 1) * displayPerPage)
+      .take(displayPerPage);
+
+    const [productMovements, totalCount] = await Promise.all([
+      query.getRawMany(),
+      query.getCount(),
+    ]);
+
+    // 3. Return with empty data if no movements
+    const results: IProductTransaction[] = productMovements.map((row) => ({
+      stock_id: row.stock_id,
+      product_id: row.product_id,
+      type: row.movement_type,
+      source: row.source,
+      qty_before: Number(row.qty_before),
+      change: Number(row.change),
+      qty_after: Number(row.qty_after),
+    }));
+
+    return {
+      status: {
+        success: true,
+        message: 'Product Movements fetched successfully',
+      },
+      data: results,
+      meta: {
+        page: pageNumber,
+        totalNumber: totalCount,
+        totalPages: Math.ceil(totalCount / displayPerPage),
+        displayPage: displayPerPage,
+      },
+    };
   }
 }
