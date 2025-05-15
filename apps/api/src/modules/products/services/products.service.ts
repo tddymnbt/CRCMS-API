@@ -103,6 +103,7 @@ export class ProductsService {
       dto.consigned_date = null;
     } else {
       const throwIfMissing = (field: any, message: string) => {
+        // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type
         if (!field) {
           throw new BadRequestException({
             status: { success: false, message },
@@ -312,6 +313,7 @@ export class ProductsService {
       dto.consigned_date = null;
     } else {
       const throwIfMissing = (field: any, message: string) => {
+        // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type
         if (!field) {
           throw new BadRequestException({
             status: { success: false, message },
@@ -503,7 +505,6 @@ export class ProductsService {
 
     const query = this.productRepo.createQueryBuilder('product');
 
-    console.log(dto.searchValue);
     // Apply search filter
     if (searchValue) {
       query.andWhere(
