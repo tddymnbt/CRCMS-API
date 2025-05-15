@@ -36,7 +36,7 @@ export class ProductsController {
   async findAll(@Query() query: FindProductsDto): Promise<IProductsResponse> {
     return this.service.findAll(query);
   }
-  @Get(':id')
+  @Get('id/:id')
   @ApiOperation({ summary: 'Find specific product' })
   async findOne(@Param('id') id: string): Promise<IProductResponse> {
     return this.service.findOne(id);
@@ -48,7 +48,7 @@ export class ProductsController {
     return this.service.createProduct(dto);
   }
 
-  @Put('update-stock/:id')
+  @Put('update-stock/id/:id')
   @ApiOperation({ summary: 'Update product stock' })
   async updateProductStock(
     @Param('id') id: string,
@@ -57,7 +57,7 @@ export class ProductsController {
     return this.service.updateProductStock(id, dto);
   }
 
-  @Delete(':id')
+  @Delete('id/:id')
   @ApiOperation({ summary: 'Delete product' })
   async remove(
     @Param('id') id: string,
@@ -66,7 +66,7 @@ export class ProductsController {
     return this.service.remove(id, dto.deleted_by);
   }
 
-  @Put(':id')
+  @Put('id/:id')
   @ApiOperation({ summary: 'Update product' })
   async update(
     @Param('id') id: string,
@@ -75,7 +75,7 @@ export class ProductsController {
     return this.service.update(id, dto);
   }
 
-  @Post(':id/transactions')
+  @Post('id/:id/transactions')
   @ApiOperation({ summary: 'Get product movements' })
   async getProductMovements(
     @Param('id') id: string,

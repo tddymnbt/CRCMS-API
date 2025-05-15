@@ -28,7 +28,7 @@ export class BrandsController {
     return this.service.findAll();
   }
 
-  @Get(':id')
+  @Get('id/:id')
   @ApiOperation({ summary: 'Get specific product brand' })
   async findOne(@Param('id') id: string): Promise<IProductMiscResponse> {
     return this.service.findOne(id);
@@ -42,7 +42,7 @@ export class BrandsController {
     return this.service.create(dto);
   }
 
-  @Put(':id')
+  @Put('id/:id')
   @ApiOperation({ summary: 'Update product brand' })
   async update(
     @Param('id') id: string,
@@ -51,7 +51,7 @@ export class BrandsController {
     return this.service.update(id, dto);
   }
 
-  @Delete(':id')
+  @Delete('id/:id')
   @ApiOperation({ summary: 'Delete product brand' })
   async remove(
     @Param('id') id: string,
