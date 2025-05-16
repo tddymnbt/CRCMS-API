@@ -146,14 +146,27 @@ export class ClientsService {
     };
   }
 
-  async findOne(ext_id: string): Promise<IClientResponse> {
-    const client = await this.clientRepo.findOne({
-      where: { external_id: ext_id.trim() },
-    });
+  async findOne(
+    ext_id: string,
+    is_consigned?: boolean,
+  ): Promise<IClientResponse> {
+    const whereClause: FindOptionsWhere<Client> = {
+      external_id: ext_id.trim(),
+    };
+    if (is_consigned) {
+      whereClause.is_consignor = true;
+    }
+
+    const client = await this.clientRepo.findOne({ where: whereClause });
 
     if (!client) {
       throw new NotFoundException({
-        status: { success: false, message: 'Client not found' },
+        status: {
+          success: false,
+          message: is_consigned
+            ? 'Client must be a valid consignor'
+            : 'Client not found',
+        },
       });
     }
 
@@ -161,17 +174,16 @@ export class ClientsService {
       where: { client_ext_id: client.external_id.trim() },
     });
 
-    // Exclude `id` and other internal fields if needed
-    const { id: _, ...clientSafe } = client as Client; // eslint-disable-line @typescript-eslint/no-unused-vars
+    const { id: _, ...clientSafe } = client as Client;
 
     let bankSafe: IClientBankDetails | null = null;
     if (clientBank) {
       const {
-        id: __, // eslint-disable-line @typescript-eslint/no-unused-vars
-        client_ext_id, // eslint-disable-line @typescript-eslint/no-unused-vars
-        created_at, // eslint-disable-line @typescript-eslint/no-unused-vars
-        updated_at, // eslint-disable-line @typescript-eslint/no-unused-vars
-        ...safeBank // eslint-disable-line @typescript-eslint/no-unused-vars
+        id: __,
+        client_ext_id,
+        created_at,
+        updated_at,
+        ...safeBank
       } = clientBank as ClientBankDetail;
       bankSafe = safeBank;
     }
