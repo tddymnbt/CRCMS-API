@@ -61,7 +61,7 @@ export class ProductsService {
       : null;
 
     const consignor = consignor_ext_id
-      ? await this.clientService.findOne(consignor_ext_id.trim())
+      ? await this.clientService.findOne(consignor_ext_id.trim(), true)
       : null;
 
     return {
