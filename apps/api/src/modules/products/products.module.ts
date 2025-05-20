@@ -17,6 +17,7 @@ import { Stock } from './entities/stock.entity';
 import { ClientsModule } from '../clients/clients.module';
 import { StockMovementService } from './services/stock-movement.service';
 import { StockMovement } from './entities/stock-movement.entity';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { StockMovement } from './entities/stock-movement.entity';
       StockMovement,
     ]),
     ClientsModule,
+    UsersModule,
   ],
   controllers: [
     ProductsController,

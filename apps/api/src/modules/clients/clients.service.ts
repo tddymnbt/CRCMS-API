@@ -19,6 +19,7 @@ import { generateUniqueId } from 'src/common/utils/gen-nanoid';
 import { ClientBankDetail } from './entities/client-bank.entity';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { BirthMonthParamDto } from './dto/get-celebrant.dto';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class ClientsService {
@@ -28,6 +29,8 @@ export class ClientsService {
 
     @InjectRepository(ClientBankDetail)
     private clientBankRepo: Repository<ClientBankDetail>,
+
+    private readonly userService: UsersService,
   ) {}
 
   async findAll(dto: FindClientsDto): Promise<IClientsResponse> {
@@ -45,7 +48,11 @@ export class ClientsService {
 
     if (searchValue) {
       query.andWhere(
-        '(client.first_name ILIKE :search OR client.last_name ILIKE :search OR client.email ILIKE :search OR client.instagram ILIKE :search OR client.facebook ILIKE :search)',
+        `(client.first_name ILIKE :search 
+          OR client.last_name ILIKE :search 
+          OR client.email ILIKE :search 
+          OR client.instagram ILIKE :search 
+          OR client.facebook ILIKE :search)`,
         { search: `%${searchValue}%` },
       );
     }
@@ -70,26 +77,39 @@ export class ClientsService {
 
     const clientsWithBank = await Promise.all(
       clients.map(async (client) => {
-        const { id: _, ...clientSafe } = client as Client; // eslint-disable-line @typescript-eslint/no-unused-vars
+        const { id: _, ...clientSafe } = client as Client;
 
-        const bank = await this.clientBankRepo.findOne({
-          where: { client_ext_id: client.external_id },
-        });
+        const [bank, performedBy] = await Promise.all([
+          this.clientBankRepo.findOne({
+            where: { client_ext_id: client.external_id },
+          }),
+          this.userService.getPerformedBy(
+            client.created_by,
+            client.updated_by,
+            client.deleted_by,
+          ),
+        ]);
 
         let bankSafe: IClientBankDetails | null = null;
         if (bank) {
           const {
-            id: __, // eslint-disable-line @typescript-eslint/no-unused-vars
-            client_ext_id, // eslint-disable-line @typescript-eslint/no-unused-vars
-            created_at, // eslint-disable-line @typescript-eslint/no-unused-vars
-            updated_at, // eslint-disable-line @typescript-eslint/no-unused-vars
-            ...safeBank // eslint-disable-line @typescript-eslint/no-unused-vars
+            id: __,
+            client_ext_id,
+            created_at,
+            updated_at,
+            ...safeBank
           } = bank as ClientBankDetail;
           bankSafe = safeBank;
         }
 
         return {
           ...clientSafe,
+          created_by:
+            performedBy.data.create?.name || client.created_by || null,
+          updated_by:
+            performedBy.data.update?.name || client.updated_by || null,
+          deleted_by:
+            performedBy.data.delete?.name || client.deleted_by || null,
           bank: bankSafe,
         };
       }),
@@ -170,9 +190,16 @@ export class ClientsService {
       });
     }
 
-    const clientBank = await this.clientBankRepo.findOne({
-      where: { client_ext_id: client.external_id.trim() },
-    });
+    const [clientBank, performedBy] = await Promise.all([
+      this.clientBankRepo.findOne({
+        where: { client_ext_id: client.external_id.trim() },
+      }),
+      this.userService.getPerformedBy(
+        client.created_by,
+        client.updated_by,
+        client.deleted_by,
+      ),
+    ]);
 
     const { id: _, ...clientSafe } = client as Client;
 
@@ -192,6 +219,9 @@ export class ClientsService {
       status: { success: true, message: 'Client details' },
       data: {
         ...clientSafe,
+        created_by: performedBy.data.create?.name || client.created_by || null,
+        updated_by: performedBy.data.update?.name || client.updated_by || null,
+        deleted_by: performedBy.data.delete?.name || client.deleted_by || null,
         bank: bankSafe,
       },
     };

@@ -33,10 +33,29 @@ export interface IUser {
   deleted_at?: Date;
   deleted_by?: string;
   last_login?: string;
-  role?:{
+  role?: {
     id: string;
     name: string;
-  }
+  };
 }
 
-
+export interface IUserActionResponse {
+  status: {
+    success: boolean;
+    message: string;
+  };
+  data: {
+    create?: {
+      external_id: string;
+      name: string;
+    };
+    update?: {
+      external_id: string;
+      name: string;
+    };
+    delete?: {
+      external_id: string;
+      name: string;
+    };
+  };
+}
