@@ -497,6 +497,8 @@ export class ProductsService {
     const {
       searchValue,
       isConsigned,
+      isOutOfStock,
+      isLowStock,
       pageNumber,
       displayPerPage,
       sortBy,
@@ -504,6 +506,29 @@ export class ProductsService {
     } = dto;
 
     const query = this.productRepo.createQueryBuilder('product');
+
+    const needsStockJoin =
+      ['Y', 'y'].includes(isOutOfStock) || ['Y', 'y'].includes(isLowStock);
+
+    if (needsStockJoin) {
+      query.leftJoin(
+        'stocks',
+        'stock',
+        'product.external_id = stock.product_ext_id',
+      );
+    }
+
+    // Filter by out of stock
+    if (['Y', 'y'].includes(isOutOfStock)) {
+      query.andWhere('stock.avail_qty = 0');
+    }
+
+    // Filter by low in stock
+    if (['Y', 'y'].includes(isLowStock)) {
+      query
+        .andWhere('stock.avail_qty <= stock.min_qty')
+        .andWhere('stock.avail_qty > 0');
+    }
 
     // Apply search filter
     if (searchValue) {
