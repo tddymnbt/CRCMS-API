@@ -25,6 +25,7 @@ import { FindProductsDto } from '../dtos/find-all-products.dto';
 import { StockMovementService } from './stock-movement.service';
 import { UpdateProductStockDto } from '../dtos/update-p-stock.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
+import { UsersService } from 'src/modules/users/users.service';
 
 @Injectable()
 export class ProductsService {
@@ -34,6 +35,7 @@ export class ProductsService {
     private readonly pAuthenticatorService: AuthenticatorsService,
     private readonly clientService: ClientsService,
     private readonly stockMovementService: StockMovementService,
+    private readonly userService: UsersService,
 
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
@@ -518,19 +520,16 @@ export class ProductsService {
       );
     }
 
-    // Filter by out of stock
     if (['Y', 'y'].includes(isOutOfStock)) {
       query.andWhere('stock.avail_qty = 0');
     }
 
-    // Filter by low in stock
     if (['Y', 'y'].includes(isLowStock)) {
       query
         .andWhere('stock.avail_qty <= stock.min_qty')
         .andWhere('stock.avail_qty > 0');
     }
 
-    // Apply search filter
     if (searchValue) {
       query.andWhere(
         `(product.name ILIKE :search OR product.material ILIKE :search OR product.hardware ILIKE :search OR product.code ILIKE :search OR product.measurement ILIKE :search OR product.model ILIKE :search)`,
@@ -538,14 +537,12 @@ export class ProductsService {
       );
     }
 
-    // Filter by consigned
     if (isConsigned) {
       query.andWhere('product.is_consigned = :isConsigned', {
         isConsigned: ['Y', 'y'].includes(isConsigned),
       });
     }
 
-    // Pagination and sorting
     query
       .orderBy(`product.${sortBy}`, orderBy.toUpperCase() as 'ASC' | 'DESC')
       .skip((pageNumber - 1) * displayPerPage)
@@ -553,10 +550,9 @@ export class ProductsService {
 
     const [products, totalCount] = await query.getManyAndCount();
 
-    // Fetch related data
     const results: IProduct[] = await Promise.all(
       products.map(async (product) => {
-        const [condition, stock, miscVals] = await Promise.all([
+        const [condition, stock, miscVals, performedBy] = await Promise.all([
           this.conditionRepo.findOne({
             where: { product_ext_id: product.external_id },
           }),
@@ -569,11 +565,24 @@ export class ProductsService {
             product.auth_ext_id,
             product.consignor_ext_id,
           ),
+          this.userService.getPerformedBy(
+            product.created_by,
+            product.updated_by,
+            product.deleted_by,
+          ),
         ]);
 
         return this.buildProductResponse(
-          stock.external_id,
-          product,
+          stock?.external_id,
+          {
+            ...product,
+            created_by:
+              performedBy.data.create?.name || product.created_by || null,
+            updated_by:
+              performedBy.data.update?.name || product.updated_by || null,
+            deleted_by:
+              performedBy.data.delete?.name || product.deleted_by || null,
+          },
           condition,
           stock,
           miscVals,
@@ -609,6 +618,7 @@ export class ProductsService {
         },
       });
     }
+
     const product = await this.productRepo.findOne({
       where: { external_id: stock.product_ext_id.trim() },
     });
@@ -622,7 +632,7 @@ export class ProductsService {
       });
     }
 
-    const [condition, miscVals] = await Promise.all([
+    const [condition, miscVals, performedBy] = await Promise.all([
       this.conditionRepo.findOne({ where: { product_ext_id: external_id } }),
       this.validateMisc(
         product.category_ext_id,
@@ -630,7 +640,19 @@ export class ProductsService {
         product.auth_ext_id,
         product.consignor_ext_id,
       ),
+      this.userService.getPerformedBy(
+        product.created_by,
+        product.updated_by,
+        product.deleted_by,
+      ),
     ]);
+
+    const resolvedProduct = {
+      ...product,
+      created_by: performedBy.data.create?.name || product.created_by || null,
+      updated_by: performedBy.data.update?.name || product.updated_by || null,
+      deleted_by: performedBy.data.delete?.name || product.deleted_by || null,
+    };
 
     return {
       status: {
@@ -639,7 +661,7 @@ export class ProductsService {
       },
       data: this.buildProductResponse(
         stock.external_id,
-        product,
+        resolvedProduct,
         condition,
         stock,
         miscVals,
