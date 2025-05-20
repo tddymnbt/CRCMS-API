@@ -11,6 +11,7 @@ import { SeederModule } from './common/seeder/seeder.module';
 import { RbacModule } from './modules/rbac/rbac.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { ProductsModule } from './modules/products/products.module';
+import { SalesModule } from './modules/sales/sales.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ProductsModule } from './modules/products/products.module';
     RbacModule,
     ClientsModule,
     ProductsModule,
+    SalesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
