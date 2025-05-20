@@ -33,6 +33,28 @@ export class FindProductsDto {
 
   @ApiProperty({
     required: false,
+    default: 'N',
+    description: 'Filter by out of stock items',
+    example: 'N',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Y', 'N', 'y', 'n'], { message: 'isOutOfStock must be Y or N' })
+  isOutOfStock?: string;
+
+  @ApiProperty({
+    required: false,
+    default: 'N',
+    description: 'Filter by low in stock items',
+    example: 'N',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Y', 'N', 'y', 'n'], { message: 'isLowStock must be Y or N' })
+  isLowStock?: string;
+
+  @ApiProperty({
+    required: false,
     default: 1,
     description: 'Page number for pagination',
     example: 1,
