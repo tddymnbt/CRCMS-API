@@ -633,7 +633,7 @@ export class ProductsService {
     }
 
     const [condition, miscVals, performedBy] = await Promise.all([
-      this.conditionRepo.findOne({ where: { product_ext_id: external_id } }),
+      this.conditionRepo.findOne({ where: { product_ext_id: product.external_id } }),
       this.validateMisc(
         product.category_ext_id,
         product.brand_ext_id,
@@ -646,6 +646,8 @@ export class ProductsService {
         product.deleted_by,
       ),
     ]);
+
+    console.log(condition);
 
     const resolvedProduct = {
       ...product,
