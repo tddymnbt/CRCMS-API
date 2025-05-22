@@ -44,10 +44,26 @@ export class UsersService {
       orderBy = 'asc',
     } = dto;
 
-    const query = this.usersRepo
+    const baseQuery = this.usersRepo
       .createQueryBuilder('user')
       .leftJoin('user_roles', 'ur', 'ur.user_id = user.external_id')
-      .leftJoin('roles', 'r', 'r.id = ur.role_id')
+      .leftJoin('roles', 'r', 'r.id = ur.role_id');
+
+    if (searchValue) {
+      baseQuery.andWhere(
+        '(user.first_name ILIKE :search OR user.last_name ILIKE :search OR user.email ILIKE :search)',
+        { search: `%${searchValue}%` },
+      );
+    }
+
+    const active = isActive?.toUpperCase() === 'Y';
+    baseQuery.andWhere('user.is_active = :isActive', { isActive: active });
+
+    // Clone baseQuery for count
+    const totalCount = await baseQuery.clone().getCount();
+
+    // Apply sorting & pagination
+    const query = baseQuery
       .select([
         'user.id',
         'user.external_id',
@@ -64,19 +80,10 @@ export class UsersService {
         'user.last_login',
         'r.id as role_id',
         'r.name as role_name',
-      ]);
-
-    if (searchValue) {
-      query.andWhere(
-        '(user.first_name ILIKE :search OR user.last_name ILIKE :search OR user.email ILIKE :search)',
-        { search: `%${searchValue}%` },
-      );
-    }
-
-    const active = isActive?.toUpperCase() === 'Y';
-    query.andWhere('user.is_active = :isActive', { isActive: active });
-    query.orderBy(`user.${sortBy}`, orderBy.toUpperCase() as 'ASC' | 'DESC');
-    query.skip((pageNumber - 1) * displayPerPage).take(displayPerPage);
+      ])
+      .orderBy(`user.${sortBy}`, orderBy.toUpperCase() as 'ASC' | 'DESC')
+      .skip((pageNumber - 1) * displayPerPage)
+      .take(displayPerPage);
 
     const { entities, raw } = await query.getRawAndEntities();
 
@@ -105,8 +112,8 @@ export class UsersService {
       data: users,
       meta: {
         page: pageNumber,
-        totalNumber: users.length,
-        totalPages: Math.ceil(users.length / displayPerPage),
+        totalNumber: totalCount,
+        totalPages: Math.ceil(totalCount / displayPerPage),
         displayPage: displayPerPage,
       },
     };
@@ -136,18 +143,18 @@ export class UsersService {
         'r.name as role_name',
       ])
       .getRawOne();
-  
+
     if (!user)
       throw new NotFoundException({
         status: { success: false, message: 'User not found' },
       });
-  
+
     const performedBy = await this.getPerformedBy(
       user.user_created_by,
       user.user_updated_by,
       user.user_deleted_by,
     );
-  
+
     return {
       status: { success: true, message: 'User details' },
       data: {
@@ -167,7 +174,9 @@ export class UsersService {
         deleted_by:
           performedBy.data.delete?.name || user.user_deleted_by || null,
         last_login: user.user_last_login,
-        role: user.role_id ? { id: user.role_id, name: user.role_name } : undefined,
+        role: user.role_id
+          ? { id: user.role_id, name: user.role_name }
+          : undefined,
       },
     };
   }

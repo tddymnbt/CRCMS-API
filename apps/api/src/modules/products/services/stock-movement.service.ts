@@ -64,11 +64,11 @@ export class StockMovementService {
     } = dto;
 
     // 1. Check if stock exists
-    const stockExists = await this.stockRepo.findOne({
+    const stock = await this.stockRepo.findOne({
       where: { external_id: stock_ext_id },
     });
 
-    if (!stockExists) {
+    if (!stock) {
       throw new NotFoundException({
         status: {
           success: false,
@@ -80,57 +80,45 @@ export class StockMovementService {
     // 2. Query stock movements
     const query = this.stockMovementRepo
       .createQueryBuilder('sm')
-      .select([
-        's.external_id AS stock_id',
-        'p.external_id AS product_id',
-        'sm.type AS movement_type',
-        'sm.source AS source',
-        `CASE 
-        WHEN sm.type = 'INBOUND' THEN s.avail_qty - sm.qty
-        WHEN sm.type = 'OUTBOUND' THEN s.avail_qty + sm.qty
-        ELSE NULL
-      END AS qty_before`,
-        'sm.qty AS change',
-        's.avail_qty AS qty_after',
-      ])
-      .leftJoin('stocks', 's', 'sm.stock_ext_id = s.external_id')
-      .leftJoin('products', 'p', 's.product_ext_id = p.external_id')
       .where('sm.stock_ext_id = :stock_ext_id', { stock_ext_id });
 
     if (searchValue) {
       query.andWhere(
         `(
-        sm.type ILIKE :search
-        OR sm.source ILIKE :search
-        OR sm.qty::text ILIKE :search
-      )`,
+          sm.type ILIKE :search
+          OR sm.source ILIKE :search
+          OR CAST(sm.qty AS TEXT) ILIKE :search
+        )`,
         { search: `%${searchValue}%` },
       );
     }
-
-    // Clone the query for accurate total count
-    const countQuery = query.clone();
 
     query
       .orderBy(`sm.${sortBy}`, orderBy.toUpperCase() as 'ASC' | 'DESC')
       .skip((pageNumber - 1) * displayPerPage)
       .take(displayPerPage);
 
-    const [productMovements, totalCount] = await Promise.all([
-      query.getRawMany(),
-      countQuery.getCount(),
-    ]);
+    const [movements, totalCount] = await query.getManyAndCount();
 
-    // 3. Return mapped results
-    const results: IProductTransaction[] = productMovements.map((row) => ({
-      stock_id: row.stock_id,
-      product_id: row.product_id,
-      type: row.movement_type,
-      source: row.source,
-      qty_before: Number(row.qty_before),
-      change: Number(row.change),
-      qty_after: Number(row.qty_after),
-    }));
+    // 3. Map results
+    const results: IProductTransaction[] = movements.map((movement) => {
+      const qtyBefore =
+        movement.type === 'INBOUND'
+          ? stock.avail_qty - movement.qty
+          : movement.type === 'OUTBOUND'
+            ? stock.avail_qty + movement.qty
+            : null;
+
+      return {
+        stock_id: stock.external_id,
+        product_id: stock.product_ext_id,
+        type: movement.type,
+        source: movement.source,
+        qty_before: Number(qtyBefore),
+        change: Number(movement.qty),
+        qty_after: Number(stock.avail_qty),
+      };
+    });
 
     return {
       status: {
