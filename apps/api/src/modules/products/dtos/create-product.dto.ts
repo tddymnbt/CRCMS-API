@@ -8,6 +8,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Min,
   ValidateNested,
 } from 'class-validator';
 
@@ -15,11 +16,13 @@ export class StockDto {
   @ApiProperty({ example: 1 })
   @IsNumber({}, { message: 'Minimum quantity must be a number' })
   @IsNotEmpty({ message: 'Minimum quantity is required' })
+  @Min(0)
   min_qty: number;
 
   @ApiProperty({ example: 10 })
   @IsNumber({}, { message: 'Quantity in stock must be a number' })
   @IsNotEmpty({ message: 'Quantity in stock is required' })
+  @Min(1)
   qty_in_stock: number;
 }
 
