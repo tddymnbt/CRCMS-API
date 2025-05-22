@@ -647,8 +647,6 @@ export class ProductsService {
       ),
     ]);
 
-    console.log(condition);
-
     const resolvedProduct = {
       ...product,
       created_by: performedBy.data.create?.name || product.created_by || null,
