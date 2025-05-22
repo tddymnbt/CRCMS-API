@@ -198,7 +198,9 @@ export class ProductsService {
       stockExtId: stock_ext_id,
       type: 'INBOUND',
       source: 'NEW PRODUCT ADDED',
-      qty: dto.stock.qty_in_stock,
+      qty_before: 0,
+      qty_change: dto.stock.qty_in_stock,
+      qty_after: dto.stock.qty_in_stock,
       createdBy: dto.created_by,
     });
 
@@ -236,6 +238,8 @@ export class ProductsService {
         },
       });
     }
+    const qty_before = stock.avail_qty;
+
     const product = await this.productRepo.findOne({
       where: { external_id: stock.product_ext_id.trim() },
     });
@@ -288,7 +292,9 @@ export class ProductsService {
       stockExtId: stock_ext_id,
       type: isIncrease ? 'INBOUND' : 'OUTBOUND',
       source: 'STOCK ADJUSTMENT',
-      qty,
+      qty_before,
+      qty_change: qty,
+      qty_after: stock.avail_qty,
       createdBy: updated_by,
     });
 
@@ -633,7 +639,9 @@ export class ProductsService {
     }
 
     const [condition, miscVals, performedBy] = await Promise.all([
-      this.conditionRepo.findOne({ where: { product_ext_id: product.external_id } }),
+      this.conditionRepo.findOne({
+        where: { product_ext_id: product.external_id },
+      }),
       this.validateMisc(
         product.category_ext_id,
         product.brand_ext_id,

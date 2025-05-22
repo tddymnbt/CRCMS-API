@@ -24,7 +24,9 @@ class LogStockMovementParams {
   stockExtId: string;
   type: StockMovementType;
   source: StockMovementSource;
-  qty: number;
+  qty_before: number;
+  qty_change: number;
+  qty_after: number;
   createdBy: string;
 }
 
@@ -44,7 +46,9 @@ export class StockMovementService {
       stock_ext_id: params.stockExtId,
       type: params.type,
       source: params.source,
-      qty: params.qty,
+      qty_before: params.qty_before,
+      qty_change: params.qty_change,
+      qty_after: params.qty_after,
       created_by: params.createdBy,
     });
 
@@ -102,21 +106,14 @@ export class StockMovementService {
 
     // 3. Map results
     const results: IProductTransaction[] = movements.map((movement) => {
-      const qtyBefore =
-        movement.type === 'INBOUND'
-          ? stock.avail_qty - movement.qty
-          : movement.type === 'OUTBOUND'
-            ? stock.avail_qty + movement.qty
-            : null;
-
       return {
         stock_id: stock.external_id,
         product_id: stock.product_ext_id,
         type: movement.type,
         source: movement.source,
-        qty_before: Number(qtyBefore),
-        change: Number(movement.qty),
-        qty_after: Number(stock.avail_qty),
+        qty_before: Number(movement.qty_before),
+        change: Number(movement.qty_change),
+        qty_after: Number(movement.qty_after),
       };
     });
 
