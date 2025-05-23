@@ -20,4 +20,6 @@ export interface IProductTransaction {
   qty_before: number;
   change: number;
   qty_after: number;
+  status: string;
+  performed_by: string;
 }
