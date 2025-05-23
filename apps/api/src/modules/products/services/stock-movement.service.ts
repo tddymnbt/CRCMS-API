@@ -10,15 +10,14 @@ import {
   IProductTransactionsResponse,
 } from '../interfaces/p-trans.interface';
 import { Stock } from '../entities/stock.entity';
+import { UsersService } from 'src/modules/users/users.service';
 
 export type StockMovementType = 'INBOUND' | 'OUTBOUND';
 export type StockMovementSource =
   | 'NEW PRODUCT ADDED'
   | 'STOCK ADJUSTMENT'
   | 'SALE'
-  | 'LAYAWAY'
-  | 'RETURN'
-  | 'DELETE';
+  | 'CANCEL';
 
 class LogStockMovementParams {
   stockExtId: string;
@@ -38,6 +37,8 @@ export class StockMovementService {
 
     @InjectRepository(Stock)
     private readonly stockRepo: Repository<Stock>,
+
+    private readonly userService: UsersService,
   ) {}
 
   async logStockMovement(params: LogStockMovementParams): Promise<void> {
@@ -105,17 +106,28 @@ export class StockMovementService {
     const [movements, totalCount] = await query.getManyAndCount();
 
     // 3. Map results
-    const results: IProductTransaction[] = movements.map((movement) => {
-      return {
-        stock_id: stock.external_id,
-        product_id: stock.product_ext_id,
-        type: movement.type,
-        source: movement.source,
-        qty_before: Number(movement.qty_before),
-        change: Number(movement.qty_change),
-        qty_after: Number(movement.qty_after),
-      };
-    });
+    const results: IProductTransaction[] = await Promise.all(
+      movements.map(async (movement) => {
+        let pStatus = 'none';
+        if (movement.type.toLowerCase() === 'sale') {
+          pStatus = 'sold';
+        }
+
+        const pBy = await this.userService.getPerformedBy(movement.created_by);
+
+        return {
+          stock_id: stock.external_id,
+          product_id: stock.product_ext_id,
+          type: movement.type,
+          source: movement.source,
+          qty_before: Number(movement.qty_before),
+          change: Number(movement.qty_change),
+          qty_after: Number(movement.qty_after),
+          status: pStatus,
+          performed_by: pBy.data.create?.name || movement.created_by || null,
+        };
+      }),
+    );
 
     return {
       status: {
