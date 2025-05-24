@@ -14,14 +14,23 @@ export class SaleLayaways {
   @Column({ type: 'varchar', length: 100 })
   sale_ext_id: string;
 
+  @Column({ type: 'int' })
+  no_of_months: number;
+
   @Column({ type: 'decimal' })
   amount_due: number;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'timestamp', nullable: true })
   payment_date: Date;
 
   @Column({ type: 'timestamp' })
-  due_date: Date;
+  current_due_date: Date;
+
+  @Column({ type: 'timestamp' })
+  orig_due_date: Date;
+
+  @Column({ type: 'boolean', default: false })
+  is_extended: boolean;
 
   @Column({ type: 'varchar', length: 20 })
   status: 'Paid' | 'Unpaid';
