@@ -18,8 +18,11 @@ import { Repository } from 'typeorm';
 import {
   IProductUnit,
   ISaleResponse,
+  ISalesResponse,
   ISMiscsResponse,
 } from './interfaces/sales.interface';
+import { FindSalesDto } from './dtos/find-all-sales.dto';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class SalesService {
@@ -35,7 +38,170 @@ export class SalesService {
 
     private readonly productService: ProductsService,
     private readonly clientService: ClientsService,
+    private readonly userService: UsersService,
   ) {}
+
+  async findAll(findDto: FindSalesDto): Promise<ISalesResponse> {
+    const { searchValue, pageNumber, displayPerPage, sortBy, orderBy } =
+      findDto;
+
+    const skip = (pageNumber - 1) * displayPerPage;
+
+    const queryBuilder = this.salesRepo.createQueryBuilder('s');
+
+    if (searchValue) {
+      queryBuilder.andWhere(
+        `
+            s.external_id ILIKE :search 
+            OR s.type ILIKE :search 
+            OR s.created_by ILIKE :search
+        `,
+        { search: `%${searchValue}%` },
+      );
+    }
+
+    const [sales, totalNumber] = await queryBuilder
+      .orderBy(`s.${sortBy}`, orderBy.toUpperCase() as 'ASC' | 'DESC')
+      .skip(skip)
+      .take(displayPerPage)
+      .getManyAndCount();
+
+    const enrichedSales = await Promise.all(
+      sales.map(async (sale) => {
+        const [
+          salesItems,
+          paymentHistory,
+          salesLayaway,
+          clientData,
+          productsData,
+        ] = await Promise.all([
+          this.salesItemsRepo.find({
+            where: { sale_ext_id: sale.external_id },
+          }),
+          this.paymentLogsRepo.find({
+            where: { sale_ext_id: sale.external_id },
+            order: { payment_date: 'DESC' },
+          }),
+          this.saleLayawaysRepo.findOne({
+            where: { sale_ext_id: sale.external_id },
+          }),
+          this.validateClient(sale.client_ext_id),
+          // fetch products from salesItems
+          this.validateProducts(
+            (
+              await this.salesItemsRepo.find({
+                where: { sale_ext_id: sale.external_id },
+              })
+            ).map((item) => ({ product_ext_id: item.product_ext_id })),
+            'read',
+          ),
+        ]);
+
+        return this.buildCreateSaleResponse(
+          sale,
+          clientData,
+          productsData,
+          salesItems,
+          paymentHistory,
+          salesLayaway,
+        );
+      }),
+    );
+
+    const totalPages = Math.ceil(totalNumber / displayPerPage);
+
+    return {
+      status: {
+        success: true,
+        message: 'Sales transactions retrieved',
+      },
+      data: enrichedSales,
+      meta: {
+        page: pageNumber,
+        totalNumber,
+        totalPages,
+        displayPage: displayPerPage,
+      },
+    };
+  }
+
+  async findOne(external_id: string): Promise<ISaleResponse> {
+    const sales = await this.salesRepo.findOne({
+      where: { external_id: external_id.trim() },
+    });
+
+    if (!sales) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Sales transaction not found',
+        },
+      });
+    }
+
+    const salesItems = await this.salesItemsRepo.find({
+      where: { sale_ext_id: external_id.trim() },
+    });
+
+    if (!salesItems || salesItems.length === 0) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Sold products not found',
+        },
+      });
+    }
+
+    const paymentHistory = await this.paymentLogsRepo.find({
+      where: { sale_ext_id: external_id.trim() },
+      order: { payment_date: 'DESC' },
+    });
+
+    if (!paymentHistory || paymentHistory.length === 0) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Payment history not found',
+        },
+      });
+    }
+
+    const salesLayaway = await this.saleLayawaysRepo.findOne({
+      where: { sale_ext_id: external_id.trim() },
+    });
+
+    const [clientData, productsData] = await Promise.all([
+      this.validateClient(sales.client_ext_id),
+      this.validateProducts(
+        salesItems.map((item) => ({ product_ext_id: item.product_ext_id })),
+        'read',
+      ),
+    ]);
+    const createdBy = await this.userService.getPerformedBy(sales.created_by);
+    const cancelledBy = await this.userService.getPerformedBy(
+      sales.cancelled_by,
+    );
+
+    return {
+      status: {
+        success: true,
+        message: 'Sale transaction found',
+      },
+      data: this.buildCreateSaleResponse(
+        {
+          ...sales,
+          created_by: createdBy.data.create?.name || sales.created_by || null,
+          cancelled_by:
+            cancelledBy.data.create?.name || sales.cancelled_by || null,
+        },
+        clientData,
+        productsData,
+        salesItems,
+        paymentHistory,
+        salesLayaway,
+      ),
+    };
+  }
 
   async createSale(dto: SalesDto): Promise<ISaleResponse> {
     if (!dto.is_discounted) {
@@ -62,7 +228,7 @@ export class SalesService {
 
     const [clientData, productsData] = await Promise.all([
       this.validateClient(dto.client_ext_id),
-      this.validateProducts(dto.products),
+      this.validateProducts(dto.products, 'create'),
     ]);
 
     const sale_ext_id = `S-${generateUniqueId(10)}`;
@@ -163,6 +329,10 @@ export class SalesService {
 
       await this.saleLayawaysRepo.save(saleLayaway);
     }
+    const createdBy = await this.userService.getPerformedBy(sales.created_by);
+    const cancelledBy = await this.userService.getPerformedBy(
+      sales.cancelled_by,
+    );
 
     return {
       status: {
@@ -170,7 +340,12 @@ export class SalesService {
         message: 'Sale successfully recorded',
       },
       data: this.buildCreateSaleResponse(
-        sales,
+        {
+          ...sales,
+          created_by: createdBy.data.create?.name || sales.created_by || null,
+          cancelled_by:
+            cancelledBy.data.create?.name || sales.cancelled_by || null,
+        },
         clientData,
         productsData,
         salesItems,
@@ -179,8 +354,8 @@ export class SalesService {
       ),
     };
   }
-  async validateProducts(
-    products: { product_ext_id: string; qty: number }[],
+  async validateProducts_old(
+    products: { product_ext_id: string; qty?: number }[],
   ): Promise<IProduct[]> {
     const seen = new Set<string>();
     const duplicates: string[] = [];
@@ -240,6 +415,73 @@ export class SalesService {
     return validatedProducts;
   }
 
+  async validateProducts(
+    products: { product_ext_id: string; qty?: number }[],
+    mode: 'create' | 'read' = 'create',
+  ): Promise<IProduct[]> {
+    const seen = new Set<string>();
+    const duplicates: string[] = [];
+    const insufficientStock: string[] = [];
+    const notFoundProducts: string[] = [];
+    const validatedProducts: IProduct[] = [];
+
+    for (const item of products) {
+      const trimmedId = item.product_ext_id.trim();
+
+      if (mode === 'create') {
+        // Check duplicate
+        if (seen.has(trimmedId)) {
+          duplicates.push(trimmedId);
+          continue;
+        }
+        seen.add(trimmedId);
+      }
+
+      // Fetch product
+      const productData = await this.productService
+        .findOne(trimmedId)
+        .then((res) => res?.data ?? null);
+
+      if (!productData) {
+        notFoundProducts.push(trimmedId);
+        continue;
+      }
+
+      if (mode === 'create') {
+        // Check quantity only in create mode
+        if (item.qty > productData.stock.qty_in_stock) {
+          insufficientStock.push(
+            `${trimmedId} (requested: ${item.qty}, available: ${productData.stock.qty_in_stock})`,
+          );
+        }
+      }
+
+      validatedProducts.push(productData);
+    }
+
+    if (mode === 'create') {
+      if (duplicates.length > 0) {
+        throw new BadRequestException(
+          `Duplicate product_ext_id(s) found: ${duplicates.join(', ')}`,
+        );
+      }
+
+      if (insufficientStock.length > 0) {
+        throw new BadRequestException(
+          `Insufficient stock for product(s): ${insufficientStock.join(', ')}`,
+        );
+      }
+    }
+
+    if (notFoundProducts.length > 0) {
+      throw new NotFoundException(
+        `Product(s) not found: ${notFoundProducts.join(', ')}`,
+      );
+    }
+
+    return validatedProducts;
+  }
+
   async validateClient(client_ext_id: string): Promise<IClient> {
     const client = await this.clientService.findOne(client_ext_id.trim());
     return client?.data ?? null;
@@ -253,6 +495,7 @@ export class SalesService {
     paymentLogs: PaymentLogs[] | PaymentLogs | null, // Single or multiple logs
     layawayPlan?: SaleLayaways, // Optional layaway
   ): ISaleResponse['data'] | null {
+    console.log(productsData);
     // Ensure paymentLogs is an array
     const paymentLogsArray: PaymentLogs[] = Array.isArray(paymentLogs)
       ? paymentLogs
@@ -263,9 +506,10 @@ export class SalesService {
     // Map sale items to IProductUnit[]
     const productUnits: IProductUnit[] = saleItems.map((item) => {
       const product = productsData.find(
-        (p) => p.product_external_id === item.product_ext_id,
+        (p) => p.stock_external_id === item.product_ext_id,
       );
 
+      console.log(product);
       return {
         external_id: item.product_ext_id,
         name: product?.name ?? '',

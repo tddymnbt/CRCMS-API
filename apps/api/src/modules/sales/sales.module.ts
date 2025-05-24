@@ -8,12 +8,14 @@ import { Sales } from './entities/sales.entity';
 import { SalesItems } from './entities/sale-items.entity';
 import { PaymentLogs } from './entities/payment-logs.entity';
 import { SaleLayaways } from './entities/sale-layaways.entity';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Sales, SalesItems, SaleLayaways, PaymentLogs]),
     ClientsModule,
     ProductsModule,
+    UsersModule,
   ],
   controllers: [SalesController],
   providers: [SalesService],
