@@ -3,7 +3,7 @@ import {
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
-  DeleteDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('sale_layaways')
@@ -14,14 +14,23 @@ export class SaleLayaways {
   @Column({ type: 'varchar', length: 100 })
   sale_ext_id: string;
 
+  @Column({ type: 'int' })
+  no_of_months: number;
+
   @Column({ type: 'decimal' })
   amount_due: number;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'timestamp', nullable: true })
   payment_date: Date;
 
   @Column({ type: 'timestamp' })
-  due_date: Date;
+  current_due_date: Date;
+
+  @Column({ type: 'timestamp' })
+  orig_due_date: Date;
+
+  @Column({ type: 'boolean', default: false })
+  is_extended: boolean;
 
   @Column({ type: 'varchar', length: 20 })
   status: 'Paid' | 'Unpaid';
@@ -32,9 +41,9 @@ export class SaleLayaways {
   @Column({ type: 'varchar', length: 100 })
   created_by: string;
 
-  @DeleteDateColumn({ type: 'timestamp', nullable: true })
-  deleted_at?: Date;
+  @UpdateDateColumn({ nullable: true })
+  updated_at?: Date;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  deleted_by?: string;
+  updated_by?: string;
 }

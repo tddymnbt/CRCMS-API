@@ -27,15 +27,6 @@ export class SalesItems {
   @Column({ type: 'decimal' })
   unit_price: number;
 
-  @Column({ type: 'bool', default: true })
-  is_discounted: boolean;
-
-  @Column({ type: 'decimal', default: 0 })
-  discount_percent: number;
-
-  @Column({ type: 'decimal', default: 0 })
-  discount_flat_rate: number;
-
   @Column({ type: 'decimal' })
   subtotal: number;
 
