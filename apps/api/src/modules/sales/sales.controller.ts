@@ -53,6 +53,12 @@ export class SalesController {
     return this.service.findAll(query, 'C');
   }
 
+  @Get('paid')
+  @ApiOperation({ summary: 'Find all fully paid sales' })
+  async findAllPaid(@Query() query: FindSalesDto): Promise<ISalesResponse> {
+    return this.service.findAll(query, 'FP');
+  }
+
   @Get('id/:id')
   @ApiOperation({ summary: 'Find specific sale' })
   async findOne(@Param('id') id: string): Promise<ISaleResponse> {
