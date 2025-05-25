@@ -46,7 +46,7 @@ export class SalesService {
 
   async findAll(
     findDto: FindSalesDto,
-    mode: 'A' | 'CN' | 'R' | 'L' | 'C' | 'OD',
+    mode: 'A' | 'CN' | 'R' | 'L' | 'C' | 'OD' | 'FP',
   ): Promise<ISalesResponse> {
     const { searchValue, pageNumber, displayPerPage, sortBy, orderBy } =
       findDto;
@@ -93,6 +93,9 @@ export class SalesService {
         break;
       case 'C':
         queryBuilder.andWhere(`s.status = 'Cancelled'`);
+        break;
+      case 'FP':
+        queryBuilder.andWhere(`s.status = 'Fully paid'`);
         break;
       case 'OD':
         // Ensure we only check overdue layaways
