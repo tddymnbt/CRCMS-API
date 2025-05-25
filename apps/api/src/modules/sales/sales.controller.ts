@@ -13,8 +13,37 @@ export class SalesController {
   @Get()
   @ApiOperation({ summary: 'Find all sales' })
   async findAll(@Query() query: FindSalesDto): Promise<ISalesResponse> {
-    return this.service.findAll(query);
+    return this.service.findAll(query, 'A');
   }
+
+  @Get('regular')
+  @ApiOperation({ summary: 'Find all regular sales' })
+  async findAllRegular(@Query() query: FindSalesDto): Promise<ISalesResponse> {
+    return this.service.findAll(query, 'R');
+  }
+
+  @Get('layaway')
+  @ApiOperation({ summary: 'Find all layaway sales' })
+  async findAllLayaway(@Query() query: FindSalesDto): Promise<ISalesResponse> {
+    return this.service.findAll(query, 'L');
+  }
+
+  @Get('consigned')
+  @ApiOperation({ summary: 'Find all consigned sales' })
+  async findAllConsigned(
+    @Query() query: FindSalesDto,
+  ): Promise<ISalesResponse> {
+    return this.service.findAll(query, 'CN');
+  }
+
+  @Get('cancelled')
+  @ApiOperation({ summary: 'Find all cancelled sales' })
+  async findAllCancelled(
+    @Query() query: FindSalesDto,
+  ): Promise<ISalesResponse> {
+    return this.service.findAll(query, 'C');
+  }
+
   @Get('id/:id')
   @ApiOperation({ summary: 'Find specific sale' })
   async findOne(@Param('id') id: string): Promise<ISaleResponse> {

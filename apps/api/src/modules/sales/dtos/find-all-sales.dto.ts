@@ -22,39 +22,6 @@ export class FindSalesDto {
 
   @ApiProperty({
     required: false,
-    default: 'N',
-    description: 'Filter by consigned sales',
-    example: 'N',
-  })
-  @IsOptional()
-  @IsString()
-  @IsIn(['Y', 'N', 'y', 'n'], { message: 'isConsigned must be Y or N' })
-  isConsigned?: string;
-
-  @ApiProperty({
-    required: false,
-    default: 'N',
-    description: 'Filter by layaway sales',
-    example: 'N',
-  })
-  @IsOptional()
-  @IsString()
-  @IsIn(['Y', 'N', 'y', 'n'], { message: 'isLayaway must be Y or N' })
-  isLayaway?: string;
-
-  @ApiProperty({
-    required: false,
-    default: 'N',
-    description: 'Filter by cancelled sales',
-    example: 'N',
-  })
-  @IsOptional()
-  @IsString()
-  @IsIn(['Y', 'N', 'y', 'n'], { message: 'isCancelled must be Y or N' })
-  isCancelled?: string;
-
-  @ApiProperty({
-    required: false,
     default: 1,
     description: 'Page number for pagination',
     example: 1,

@@ -41,23 +41,49 @@ export class SalesService {
     private readonly userService: UsersService,
   ) {}
 
-  async findAll(findDto: FindSalesDto): Promise<ISalesResponse> {
+  async findAll(
+    findDto: FindSalesDto,
+    mode: 'A' | 'CN' | 'R' | 'L' | 'C',
+  ): Promise<ISalesResponse> {
     const { searchValue, pageNumber, displayPerPage, sortBy, orderBy } =
       findDto;
 
     const skip = (pageNumber - 1) * displayPerPage;
 
-    const queryBuilder = this.salesRepo.createQueryBuilder('s');
+    const queryBuilder = this.salesRepo
+      .createQueryBuilder('s')
+      .leftJoin('clients', 'c', 's.client_ext_id = c.external_id')
+      .leftJoin('sales_items', 'si', 's.external_id = si.sale_ext_id')
+      .leftJoin('stocks', 'ps', 'si.product_ext_id = ps.external_id')
+      .leftJoin('products', 'p', 'ps.product_ext_id = p.external_id');
 
     if (searchValue) {
       queryBuilder.andWhere(
-        `
+        `(
             s.external_id ILIKE :search 
-            OR s.type ILIKE :search 
             OR s.created_by ILIKE :search
-        `,
+            OR p.name ILIKE :search
+            OR CONCAT(c.first_name, ' ', c.last_name) ILIKE :search
+        )`,
         { search: `%${searchValue}%` },
       );
+    }
+
+    // Apply mode filtering carefully
+    switch (mode) {
+      case 'R':
+        queryBuilder.andWhere(`s.type = 'R'`);
+        break;
+      case 'L':
+        queryBuilder.andWhere(`s.type = 'L'`);
+        break;
+      case 'CN':
+        queryBuilder.andWhere(`ps.is_consigned = true`);
+        break;
+      case 'C':
+        queryBuilder.andWhere(`s.status = 'Cancelled'`);
+        break;
+      // case 'A' means all — no extra filter
     }
 
     const [sales, totalNumber] = await queryBuilder
@@ -74,6 +100,7 @@ export class SalesService {
           salesLayaway,
           clientData,
           productsData,
+          performedBy,
         ] = await Promise.all([
           this.salesItemsRepo.find({
             where: { sale_ext_id: sale.external_id },
@@ -86,7 +113,6 @@ export class SalesService {
             where: { sale_ext_id: sale.external_id },
           }),
           this.validateClient(sale.client_ext_id),
-          // fetch products from salesItems
           this.validateProducts(
             (
               await this.salesItemsRepo.find({
@@ -95,9 +121,10 @@ export class SalesService {
             ).map((item) => ({ product_ext_id: item.product_ext_id })),
             'read',
           ),
+          this.userService.getPerformedBy(sale.created_by, sale.cancelled_by),
         ]);
 
-        return this.buildCreateSaleResponse(
+        const saleResponse = this.buildCreateSaleResponse(
           sale,
           clientData,
           productsData,
@@ -105,6 +132,14 @@ export class SalesService {
           paymentHistory,
           salesLayaway,
         );
+
+        return {
+          ...saleResponse,
+          created_by:
+            performedBy.data.create?.name || saleResponse.created_by || null,
+          cancelled_by:
+            performedBy.data.update?.name || saleResponse.cancelled_by || null,
+        };
       }),
     );
 
