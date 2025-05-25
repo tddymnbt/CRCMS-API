@@ -4,6 +4,8 @@ import { SalesDto } from './dtos/create-sales.dto';
 import { ISaleResponse, ISalesResponse } from './interfaces/sales.interface';
 import { SalesService } from './sales.service';
 import { FindSalesDto } from './dtos/find-all-sales.dto';
+import { RecordPaymentDto } from './dtos/record-payment.dto';
+import { CancelSaleDto } from './dtos/cancel-sale.dto';
 
 @ApiTags('sales')
 @Controller('sales')
@@ -54,5 +56,17 @@ export class SalesController {
   @ApiOperation({ summary: 'Create sales transaction' })
   async create(@Body() dto: SalesDto): Promise<ISaleResponse> {
     return this.service.createSale(dto);
+  }
+
+  @Post('payment')
+  @ApiOperation({ summary: 'Record payment' })
+  async recordPayment(@Body() dto: RecordPaymentDto): Promise<ISaleResponse> {
+    return this.service.recordPayment(dto);
+  }
+
+  @Post('cancel')
+  @ApiOperation({ summary: 'Cancel sale transaction' })
+  async cancelSale(@Body() dto: CancelSaleDto): Promise<ISaleResponse> {
+    return this.service.cancelSales(dto);
   }
 }

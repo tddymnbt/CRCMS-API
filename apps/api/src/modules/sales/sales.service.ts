@@ -14,7 +14,7 @@ import { ProductsService } from '../products/services/products.service';
 import { ClientsService } from '../clients/clients.service';
 import { IProduct } from '../products/interfaces/product.interface';
 import { IClient } from '../clients/interface/client-response.interface';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import {
   IProductUnit,
   ISaleResponse,
@@ -23,6 +23,8 @@ import {
 } from './interfaces/sales.interface';
 import { FindSalesDto } from './dtos/find-all-sales.dto';
 import { UsersService } from '../users/users.service';
+import { RecordPaymentDto } from './dtos/record-payment.dto';
+import { CancelSaleDto } from './dtos/cancel-sale.dto';
 
 @Injectable()
 export class SalesService {
@@ -389,6 +391,177 @@ export class SalesService {
       ),
     };
   }
+
+  async recordPayment(dto: RecordPaymentDto): Promise<ISaleResponse> {
+    const layawaySales = await this.salesRepo.findOne({
+      where: { external_id: dto.sale_ext_id.trim(), type: 'L' },
+    });
+
+    if (!layawaySales) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message:
+            'Sales transaction not found or sale was not tagged as Layaway',
+        },
+      });
+    }
+    if (layawaySales.status === 'Fully paid') {
+      throw new BadRequestException({
+        status: {
+          success: false,
+          message: 'Sales transaction status is Fully Paid',
+        },
+      });
+    }
+    if (layawaySales.status === 'Cancelled') {
+      throw new BadRequestException({
+        status: {
+          success: false,
+          message: 'Sales transaction status is Cancelled',
+        },
+      });
+    }
+    let paymentLogsArray = await this.paymentLogsRepo.find({
+      where: { sale_ext_id: layawaySales.external_id.trim() },
+      order: { payment_date: 'DESC' },
+    });
+
+    const salesLayawayDetails = await this.saleLayawaysRepo.findOne({
+      where: { sale_ext_id: layawaySales.external_id.trim() },
+    });
+
+    // Calculate total paid amount
+    let totalPaidAmount = paymentLogsArray.reduce(
+      (sum, payment) => sum + Number(payment.amount),
+      0,
+    );
+
+    // Determine base amount (depends on sale type)
+    let baseAmount = Number(layawaySales.total_amount);
+
+    // Calculate outstanding balance (never negative)
+    let outstandingBalance = Math.max(baseAmount - totalPaidAmount, 0).toFixed(
+      2,
+    );
+
+    if (Number(outstandingBalance) <= 0) {
+      layawaySales.status = 'Fully paid';
+      await this.salesRepo.save(layawaySales);
+
+      if (salesLayawayDetails) {
+        salesLayawayDetails.amount_due = 0;
+        salesLayawayDetails.payment_date = paymentLogsArray[0].payment_date;
+        salesLayawayDetails.status = 'Paid';
+        await this.saleLayawaysRepo.save(salesLayawayDetails);
+      }
+
+      throw new BadRequestException({
+        status: {
+          success: false,
+          message: 'No outstanding balance',
+        },
+      });
+    }
+
+    //Record payment
+    if (Number(dto.payment.amount) > Number(outstandingBalance)) {
+      throw new BadRequestException({
+        status: {
+          success: false,
+          message: 'Payment amount is greater than the outstanding balance',
+        },
+      });
+    }
+
+    const payment_ext_id = `P-${generateUniqueId(10)}`;
+    const isDeposit = Number(dto.payment.amount) < Number(outstandingBalance);
+    const isFinalPayment =
+      Number(dto.payment.amount) === Number(outstandingBalance);
+
+    const paymentLog = this.paymentLogsRepo.create({
+      external_id: payment_ext_id,
+      sale_ext_id: layawaySales.external_id.trim(),
+      amount: Number(dto.payment.amount),
+      payment_date: dto.payment.payment_date,
+      payment_method: dto.payment.payment_method,
+      is_deposit: isDeposit,
+      is_final_payment: isFinalPayment,
+      created_by: dto.created_by,
+    });
+
+    await this.paymentLogsRepo.save(paymentLog);
+
+    if (isDeposit) {
+      // Recalculate total paid amount
+      paymentLogsArray = await this.paymentLogsRepo.find({
+        where: { sale_ext_id: layawaySales.external_id.trim() },
+        order: { payment_date: 'DESC' },
+      });
+
+      totalPaidAmount = paymentLogsArray.reduce(
+        (sum, payment) => sum + Number(payment.amount),
+        0,
+      );
+
+      // Redetermine base amount (depends on sale type)
+      baseAmount = Number(layawaySales.total_amount);
+
+      // Recalculate outstanding balance (never negative)
+      outstandingBalance = Math.max(baseAmount - totalPaidAmount, 0).toFixed(2);
+
+      if (salesLayawayDetails) {
+        salesLayawayDetails.amount_due = Number(outstandingBalance);
+        console.log(Number(outstandingBalance));
+        console.log(salesLayawayDetails.amount_due);
+        await this.saleLayawaysRepo.save(salesLayawayDetails);
+      }
+    }
+
+    if (isFinalPayment) {
+      layawaySales.status = 'Fully paid';
+      await this.salesRepo.save(layawaySales);
+
+      if (salesLayawayDetails) {
+        salesLayawayDetails.amount_due = 0;
+        salesLayawayDetails.payment_date = paymentLogsArray[0].payment_date;
+        salesLayawayDetails.status = 'Paid';
+        await this.saleLayawaysRepo.save(salesLayawayDetails);
+      }
+    }
+
+    return await this.findOne(layawaySales.external_id);
+  }
+
+  async cancelSales(dto: CancelSaleDto): Promise<ISaleResponse> {
+    const sales = await this.salesRepo.findOne({
+      where: { external_id: dto.sale_ext_id.trim(), status: Not('Cancelled') },
+    });
+
+    if (!sales) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message:
+            'Sales transaction not found or sale was already tagged as Cancelled',
+        },
+      });
+    }
+
+    sales.status = 'Cancelled';
+    sales.cancelled_by = dto.cancelled_by;
+    sales.cancelled_at = new Date();
+
+    await this.salesRepo.save(sales);
+
+    return {
+      status: {
+        success: true,
+        message: 'Sale has been successfully cancelled',
+      },
+    };
+  }
+
   async validateProducts_old(
     products: { product_ext_id: string; qty?: number }[],
   ): Promise<IProduct[]> {
