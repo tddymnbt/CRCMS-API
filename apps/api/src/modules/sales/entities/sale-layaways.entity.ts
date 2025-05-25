@@ -3,7 +3,7 @@ import {
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
-  DeleteDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('sale_layaways')
@@ -41,9 +41,9 @@ export class SaleLayaways {
   @Column({ type: 'varchar', length: 100 })
   created_by: string;
 
-  @DeleteDateColumn({ type: 'timestamp', nullable: true })
-  deleted_at?: Date;
+  @UpdateDateColumn({ nullable: true })
+  updated_at?: Date;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  deleted_by?: string;
+  updated_by?: string;
 }

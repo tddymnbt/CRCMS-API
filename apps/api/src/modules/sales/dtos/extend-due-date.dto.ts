@@ -1,25 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  IsArray,
-  IsBoolean,
-  IsDateString,
-  IsIn,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  MaxLength,
-  Min,
-  MinLength,
-  ValidateNested,
-} from 'class-validator';
+import { IsDateString, IsNotEmpty, IsString } from 'class-validator';
 export class ExtendLayawayDueDateDto {
-  @ApiProperty({ example: 'TEST123' })
-  @IsString({ message: 'sale_ext_id must be a string' })
-  @IsNotEmpty({ message: 'sale_ext_id is required' })
-  sale_ext_id: string;
-
   @ApiProperty({
     example: '2025-04-01',
     required: true,

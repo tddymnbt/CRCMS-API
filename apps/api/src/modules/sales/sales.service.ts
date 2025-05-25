@@ -25,6 +25,7 @@ import { FindSalesDto } from './dtos/find-all-sales.dto';
 import { UsersService } from '../users/users.service';
 import { RecordPaymentDto } from './dtos/record-payment.dto';
 import { CancelSaleDto } from './dtos/cancel-sale.dto';
+import { ExtendLayawayDueDateDto } from './dtos/extend-due-date.dto';
 
 @Injectable()
 export class SalesService {
@@ -45,7 +46,7 @@ export class SalesService {
 
   async findAll(
     findDto: FindSalesDto,
-    mode: 'A' | 'CN' | 'R' | 'L' | 'C',
+    mode: 'A' | 'CN' | 'R' | 'L' | 'C' | 'OD',
   ): Promise<ISalesResponse> {
     const { searchValue, pageNumber, displayPerPage, sortBy, orderBy } =
       findDto;
@@ -58,6 +59,14 @@ export class SalesService {
       .leftJoin('sales_items', 'si', 's.external_id = si.sale_ext_id')
       .leftJoin('stocks', 'ps', 'si.product_ext_id = ps.external_id')
       .leftJoin('products', 'p', 'ps.product_ext_id = p.external_id');
+
+    if (mode === 'OD') {
+      queryBuilder.leftJoin(
+        'sale_layaways',
+        'sl',
+        's.external_id = sl.sale_ext_id',
+      );
+    }
 
     if (searchValue) {
       queryBuilder.andWhere(
@@ -84,6 +93,13 @@ export class SalesService {
         break;
       case 'C':
         queryBuilder.andWhere(`s.status = 'Cancelled'`);
+        break;
+      case 'OD':
+        // Ensure we only check overdue layaways
+        queryBuilder
+          .andWhere(`sl.current_due_date < NOW()`)
+          .andWhere(`s.type = 'L'`)
+          .andWhere(`s.status = 'Deposit'`);
         break;
       // case 'A' means all — no extra filter
     }
@@ -512,8 +528,6 @@ export class SalesService {
 
       if (salesLayawayDetails) {
         salesLayawayDetails.amount_due = Number(outstandingBalance);
-        console.log(Number(outstandingBalance));
-        console.log(salesLayawayDetails.amount_due);
         await this.saleLayawaysRepo.save(salesLayawayDetails);
       }
     }
@@ -560,6 +574,75 @@ export class SalesService {
         message: 'Sale has been successfully cancelled',
       },
     };
+  }
+
+  async extendLayawayDueDate(
+    external_id: string,
+    dto: ExtendLayawayDueDateDto,
+  ): Promise<ISaleResponse> {
+    const layawaySales = await this.salesRepo.findOne({
+      where: { external_id: external_id.trim(), type: 'L' },
+    });
+
+    if (!layawaySales) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message:
+            'Sales transaction not found or sale was not tagged as Layaway',
+        },
+      });
+    }
+    if (layawaySales.status === 'Fully paid') {
+      throw new BadRequestException({
+        status: {
+          success: false,
+          message: 'Sales transaction status is Fully Paid',
+        },
+      });
+    }
+    if (layawaySales.status === 'Cancelled') {
+      throw new BadRequestException({
+        status: {
+          success: false,
+          message: 'Sales transaction status is Cancelled',
+        },
+      });
+    }
+
+    const salesLayawayDetails = await this.saleLayawaysRepo.findOne({
+      where: { sale_ext_id: layawaySales.external_id.trim() },
+    });
+
+    if (!salesLayawayDetails) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Sales layaway transaction not found',
+        },
+      });
+    }
+
+    const currentDueDate = new Date(salesLayawayDetails.current_due_date);
+    const newDueDate = new Date(dto.due_date);
+
+    if (newDueDate <= currentDueDate) {
+      throw new BadRequestException({
+        status: {
+          success: false,
+          message: 'Extended due date must be later than the current due date',
+        },
+      });
+    }
+
+    salesLayawayDetails.current_due_date = newDueDate;
+    salesLayawayDetails.is_extended = true;
+    salesLayawayDetails.updated_at = new Date();
+    salesLayawayDetails.updated_by = dto.updated_by;
+
+    await this.saleLayawaysRepo.save(salesLayawayDetails);
+
+    return await this.findOne(salesLayawayDetails.sale_ext_id.trim());
   }
 
   async validateProducts_old(
@@ -703,7 +786,6 @@ export class SalesService {
     paymentLogs: PaymentLogs[] | PaymentLogs | null, // Single or multiple logs
     layawayPlan?: SaleLayaways, // Optional layaway
   ): ISaleResponse['data'] | null {
-    console.log(productsData);
     // Ensure paymentLogs is an array
     const paymentLogsArray: PaymentLogs[] = Array.isArray(paymentLogs)
       ? paymentLogs
@@ -717,7 +799,6 @@ export class SalesService {
         (p) => p.stock_external_id === item.product_ext_id,
       );
 
-      console.log(product);
       return {
         external_id: item.product_ext_id,
         name: product?.name ?? '',
@@ -759,8 +840,8 @@ export class SalesService {
         ? {
             no_of_months: layawayPlan.no_of_months.toString(),
             amount_due: Number(layawayPlan.amount_due).toFixed(2),
-            current_due_date: layawayPlan.current_due_date,
-            orig_due_date: layawayPlan.orig_due_date,
+            current_due_date: new Date(layawayPlan.current_due_date),
+            orig_due_date: new Date(layawayPlan.orig_due_date),
             is_extended: layawayPlan.is_extended,
             status: layawayPlan.status,
           }

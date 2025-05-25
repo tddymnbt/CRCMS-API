@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SalesDto } from './dtos/create-sales.dto';
 import { ISaleResponse, ISalesResponse } from './interfaces/sales.interface';
@@ -6,6 +6,7 @@ import { SalesService } from './sales.service';
 import { FindSalesDto } from './dtos/find-all-sales.dto';
 import { RecordPaymentDto } from './dtos/record-payment.dto';
 import { CancelSaleDto } from './dtos/cancel-sale.dto';
+import { ExtendLayawayDueDateDto } from './dtos/extend-due-date.dto';
 
 @ApiTags('sales')
 @Controller('sales')
@@ -28,6 +29,12 @@ export class SalesController {
   @ApiOperation({ summary: 'Find all layaway sales' })
   async findAllLayaway(@Query() query: FindSalesDto): Promise<ISalesResponse> {
     return this.service.findAll(query, 'L');
+  }
+
+  @Get('overdue')
+  @ApiOperation({ summary: 'Find all overdue layaway sales' })
+  async findAllOverdue(@Query() query: FindSalesDto): Promise<ISalesResponse> {
+    return this.service.findAll(query, 'OD');
   }
 
   @Get('consigned')
@@ -68,5 +75,14 @@ export class SalesController {
   @ApiOperation({ summary: 'Cancel sale transaction' })
   async cancelSale(@Body() dto: CancelSaleDto): Promise<ISaleResponse> {
     return this.service.cancelSales(dto);
+  }
+
+  @Put('layaway/extend-due-date/:id')
+  @ApiOperation({ summary: 'Extend layaway due date' })
+  async update(
+    @Param('id') id: string,
+    @Body() dto: ExtendLayawayDueDateDto,
+  ): Promise<ISaleResponse> {
+    return this.service.extendLayawayDueDate(id, dto);
   }
 }
