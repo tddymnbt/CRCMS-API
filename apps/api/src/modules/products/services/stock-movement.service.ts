@@ -17,6 +17,7 @@ export type StockMovementSource =
   | 'NEW PRODUCT ADDED'
   | 'STOCK ADJUSTMENT'
   | 'SALE'
+  | 'LAYAWAY'
   | 'CANCEL';
 
 class LogStockMovementParams {
@@ -109,7 +110,7 @@ export class StockMovementService {
     const results: IProductTransaction[] = await Promise.all(
       movements.map(async (movement) => {
         let pStatus = 'none';
-        if (movement.type.toLowerCase() === 'sale') {
+        if (movement.source.toLowerCase() === 'sale') {
           pStatus = 'sold';
         }
 

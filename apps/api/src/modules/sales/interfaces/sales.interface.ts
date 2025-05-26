@@ -34,6 +34,7 @@ export interface ISale {
     description: string;
   };
   layaway_plan?: {
+    is_overdue: boolean;
     no_of_months: string;
     amount_due: string;
     current_due_date: Date;

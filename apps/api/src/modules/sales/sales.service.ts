@@ -26,6 +26,7 @@ import { UsersService } from '../users/users.service';
 import { RecordPaymentDto } from './dtos/record-payment.dto';
 import { CancelSaleDto } from './dtos/cancel-sale.dto';
 import { ExtendLayawayDueDateDto } from './dtos/extend-due-date.dto';
+// import { StockMovementService } from '../products/services/stock-movement.service';
 
 @Injectable()
 export class SalesService {
@@ -42,6 +43,7 @@ export class SalesService {
     private readonly productService: ProductsService,
     private readonly clientService: ClientsService,
     private readonly userService: UsersService,
+    // private readonly stockMovementService: StockMovementService,
   ) {}
 
   async findAll(
@@ -315,7 +317,15 @@ export class SalesService {
         created_by: dto.created_by,
       });
     });
-
+    // await this.stockMovementService.logStockMovement({
+    //   stockExtId: stock_ext_id,
+    //   type: 'OUTBOUND',
+    //   source: dto.type === 'L' ? 'LAYAWAY' : 'SALE',
+    //   qty_before,
+    //   qty_change: qty,
+    //   qty_after: stock.avail_qty,
+    //   createdBy: dto.created_by,
+    // });
     let totalAmount = salesItems.reduce(
       (sum, item) => sum + Number(item.subtotal || 0),
       0,
@@ -789,6 +799,17 @@ export class SalesService {
     paymentLogs: PaymentLogs[] | PaymentLogs | null, // Single or multiple logs
     layawayPlan?: SaleLayaways, // Optional layaway
   ): ISaleResponse['data'] | null {
+    // Utility to compare dates by day only (ignores time)
+    const isDateBeforeToday = (date: Date): boolean => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // zero out time
+
+      const compareDate = new Date(date);
+      compareDate.setHours(0, 0, 0, 0); // zero out time
+
+      return compareDate < today;
+    };
+
     // Ensure paymentLogs is an array
     const paymentLogsArray: PaymentLogs[] = Array.isArray(paymentLogs)
       ? paymentLogs
@@ -841,6 +862,9 @@ export class SalesService {
       },
       layaway_plan: layawayPlan
         ? {
+            is_overdue: isDateBeforeToday(
+              new Date(layawayPlan.current_due_date),
+            ),
             no_of_months: layawayPlan.no_of_months.toString(),
             amount_due: Number(layawayPlan.amount_due).toFixed(2),
             current_due_date: new Date(layawayPlan.current_due_date),

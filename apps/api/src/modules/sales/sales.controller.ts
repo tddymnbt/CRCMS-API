@@ -13,6 +13,8 @@ import { ExtendLayawayDueDateDto } from './dtos/extend-due-date.dto';
 export class SalesController {
   constructor(private readonly service: SalesService) {}
 
+  //#region GET API
+
   @Get()
   @ApiOperation({ summary: 'Find all sales' })
   async findAll(@Query() query: FindSalesDto): Promise<ISalesResponse> {
@@ -65,6 +67,8 @@ export class SalesController {
     return this.service.findOne(id);
   }
 
+  //#endregion
+
   @Post()
   @ApiOperation({ summary: 'Create sales transaction' })
   async create(@Body() dto: SalesDto): Promise<ISaleResponse> {
@@ -85,7 +89,7 @@ export class SalesController {
 
   @Put('layaway/extend-due-date/:id')
   @ApiOperation({ summary: 'Extend layaway due date' })
-  async update(
+  async extendLayawayDueDate(
     @Param('id') id: string,
     @Body() dto: ExtendLayawayDueDateDto,
   ): Promise<ISaleResponse> {
