@@ -364,6 +364,16 @@ export class SalesService {
     });
 
     await this.salesRepo.save(sales);
+
+    // Update stock before saving sales items
+    for (const item of salesItems) {
+      await this.productService.updateStockFromSale(item.product_ext_id, {
+        type: dto.type === 'R' ? 'sale' : 'layaway', // R: Regular Sale, L: Layaway
+        qty: item.qty,
+        updated_by: dto.created_by,
+      });
+    }
+
     await this.salesItemsRepo.save(salesItems);
     await this.paymentLogsRepo.save(paymentLog);
 
@@ -564,10 +574,30 @@ export class SalesService {
         },
       });
     }
+    const salesItems = await this.salesItemsRepo.find({
+      where: { sale_ext_id: sales.external_id.trim() },
+    });
+
+    if (!salesItems || salesItems.length === 0) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Sold products not found',
+        },
+      });
+    }
 
     sales.status = 'Cancelled';
     sales.cancelled_by = dto.cancelled_by;
     sales.cancelled_at = new Date();
+
+    for (const item of salesItems) {
+      await this.productService.updateStockFromSale(item.product_ext_id, {
+        type: 'cancel',
+        qty: item.qty,
+        updated_by: dto.cancelled_by,
+      });
+    }
 
     await this.salesRepo.save(sales);
 
@@ -789,6 +819,17 @@ export class SalesService {
     paymentLogs: PaymentLogs[] | PaymentLogs | null, // Single or multiple logs
     layawayPlan?: SaleLayaways, // Optional layaway
   ): ISaleResponse['data'] | null {
+    // Utility to compare dates by day only (ignores time)
+    const isDateBeforeToday = (date: Date): boolean => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // zero out time
+
+      const compareDate = new Date(date);
+      compareDate.setHours(0, 0, 0, 0); // zero out time
+
+      return compareDate < today;
+    };
+
     // Ensure paymentLogs is an array
     const paymentLogsArray: PaymentLogs[] = Array.isArray(paymentLogs)
       ? paymentLogs
@@ -841,6 +882,9 @@ export class SalesService {
       },
       layaway_plan: layawayPlan
         ? {
+            is_overdue: isDateBeforeToday(
+              new Date(layawayPlan.current_due_date),
+            ),
             no_of_months: layawayPlan.no_of_months.toString(),
             amount_due: Number(layawayPlan.amount_due).toFixed(2),
             current_due_date: new Date(layawayPlan.current_due_date),
