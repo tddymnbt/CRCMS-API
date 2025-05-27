@@ -26,7 +26,6 @@ import { UsersService } from '../users/users.service';
 import { RecordPaymentDto } from './dtos/record-payment.dto';
 import { CancelSaleDto } from './dtos/cancel-sale.dto';
 import { ExtendLayawayDueDateDto } from './dtos/extend-due-date.dto';
-// import { StockMovementService } from '../products/services/stock-movement.service';
 
 @Injectable()
 export class SalesService {
@@ -43,7 +42,6 @@ export class SalesService {
     private readonly productService: ProductsService,
     private readonly clientService: ClientsService,
     private readonly userService: UsersService,
-    // private readonly stockMovementService: StockMovementService,
   ) {}
 
   async findAll(
@@ -317,15 +315,7 @@ export class SalesService {
         created_by: dto.created_by,
       });
     });
-    // await this.stockMovementService.logStockMovement({
-    //   stockExtId: stock_ext_id,
-    //   type: 'OUTBOUND',
-    //   source: dto.type === 'L' ? 'LAYAWAY' : 'SALE',
-    //   qty_before,
-    //   qty_change: qty,
-    //   qty_after: stock.avail_qty,
-    //   createdBy: dto.created_by,
-    // });
+
     let totalAmount = salesItems.reduce(
       (sum, item) => sum + Number(item.subtotal || 0),
       0,
@@ -374,6 +364,16 @@ export class SalesService {
     });
 
     await this.salesRepo.save(sales);
+
+    // Update stock before saving sales items
+    for (const item of salesItems) {
+      await this.productService.updateStockFromSale(item.product_ext_id, {
+        type: dto.type === 'R' ? 'sale' : 'layaway', // R: Regular Sale, L: Layaway
+        qty: item.qty,
+        updated_by: dto.created_by,
+      });
+    }
+
     await this.salesItemsRepo.save(salesItems);
     await this.paymentLogsRepo.save(paymentLog);
 
@@ -574,10 +574,30 @@ export class SalesService {
         },
       });
     }
+    const salesItems = await this.salesItemsRepo.find({
+      where: { sale_ext_id: sales.external_id.trim() },
+    });
+
+    if (!salesItems || salesItems.length === 0) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Sold products not found',
+        },
+      });
+    }
 
     sales.status = 'Cancelled';
     sales.cancelled_by = dto.cancelled_by;
     sales.cancelled_at = new Date();
+
+    for (const item of salesItems) {
+      await this.productService.updateStockFromSale(item.product_ext_id, {
+        type: 'cancel',
+        qty: item.qty,
+        updated_by: dto.cancelled_by,
+      });
+    }
 
     await this.salesRepo.save(sales);
 

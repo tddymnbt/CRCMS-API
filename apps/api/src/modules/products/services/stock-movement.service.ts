@@ -109,10 +109,14 @@ export class StockMovementService {
     // 3. Map results
     const results: IProductTransaction[] = await Promise.all(
       movements.map(async (movement) => {
-        let pStatus = 'none';
-        if (movement.source.toLowerCase() === 'sale') {
-          pStatus = 'sold';
-        }
+        const source = movement.source.toLowerCase();
+        const statusMap: Record<string, string> = {
+          sale: 'sold',
+          layaway: 'reserved',
+          cancel: 'cancelled',
+        };
+
+        const pStatus = statusMap[source] ?? 'none';
 
         const pBy = await this.userService.getPerformedBy(movement.created_by);
 

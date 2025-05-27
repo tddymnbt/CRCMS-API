@@ -24,3 +24,23 @@ export class UpdateProductStockDto {
   @IsNotEmpty({ message: 'Updated By is required' })
   updated_by: string;
 }
+
+export class UpdateStockFromSaleDto {
+  @ApiProperty({ example: 'sale' })
+  @IsString({ message: 'type must be a string' })
+  @IsNotEmpty({ message: 'type is required' })
+  @IsIn(['sale', 'layaway', 'cancel'], {
+    message: 'type must be sale, layaway or cancel',
+  })
+  type: 'sale' | 'layaway' | 'cancel';
+
+  @ApiProperty({ example: 10 })
+  @IsNumber({}, { message: 'Quantity in stock must be a number' })
+  @IsNotEmpty({ message: 'Quantity in stock is required' })
+  qty: number;
+
+  @ApiProperty({ example: 'admin_user' })
+  @IsString({ message: 'Updated By must be a string' })
+  @IsNotEmpty({ message: 'Updated By is required' })
+  updated_by: string;
+}

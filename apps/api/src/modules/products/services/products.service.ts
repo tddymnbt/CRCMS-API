@@ -23,7 +23,10 @@ import {
 import { ClientsService } from 'src/modules/clients/clients.service';
 import { FindProductsDto } from '../dtos/find-all-products.dto';
 import { StockMovementService } from './stock-movement.service';
-import { UpdateProductStockDto } from '../dtos/update-p-stock.dto';
+import {
+  UpdateProductStockDto,
+  UpdateStockFromSaleDto,
+} from '../dtos/update-p-stock.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
 import { UsersService } from 'src/modules/users/users.service';
 
@@ -219,6 +222,59 @@ export class ProductsService {
     };
   }
 
+  async updateStockFromSale(ext_id: string, dto: UpdateStockFromSaleDto): Promise<void> {
+    const stock_ext_id = ext_id.trim();
+    const { type, qty, updated_by } = dto;
+  
+    if (qty <= 0) {
+      throw new BadRequestException({
+        status: { success: false, message: 'Quantity must be greater than 0' },
+      });
+    }
+  
+    const stock = await this.stockRepo.findOne({
+      where: { external_id: stock_ext_id },
+    });
+  
+    if (!stock) {
+      throw new NotFoundException({
+        status: { success: false, message: 'Stock not found' },
+      });
+    }
+  
+    const qty_before = stock.avail_qty;
+    const saleType = type.toUpperCase();
+    const isSold = saleType === 'SALE' || saleType === 'LAYAWAY';
+  
+    if (isSold) {
+      if (stock.avail_qty < qty) {
+        throw new BadRequestException({
+          status: { success: false, message: 'Not enough available quantity to sell' },
+        });
+      }
+      stock.avail_qty -= qty;
+    } else {
+      stock.avail_qty += qty;
+    }
+  
+    stock.updated_by = updated_by;
+    stock.updated_at = new Date();
+    await this.stockRepo.save(stock);
+  
+    const source = isSold ? saleType : 'CANCEL';
+    const movementType = isSold ? 'OUTBOUND' : 'INBOUND';
+  
+    await this.stockMovementService.logStockMovement({
+      stockExtId: stock_ext_id,
+      type: movementType,
+      source,
+      qty_before,
+      qty_change: qty,
+      qty_after: stock.avail_qty,
+      createdBy: updated_by,
+    });
+  }
+  
   async updateProductStock(
     ext_id: string,
     dto: UpdateProductStockDto,
