@@ -21,7 +21,10 @@ import {
   IProductsResponse,
 } from '../interfaces/product.interface';
 import { ClientsService } from 'src/modules/clients/clients.service';
-import { FindProductsDto } from '../dtos/find-all-products.dto';
+import {
+  FindConsignorProductsDto,
+  FindProductsDto,
+} from '../dtos/find-all-products.dto';
 import { StockMovementService } from './stock-movement.service';
 import {
   UpdateProductStockDto,
@@ -222,48 +225,56 @@ export class ProductsService {
     };
   }
 
-  async updateStockFromSale(ext_id: string, dto: UpdateStockFromSaleDto): Promise<void> {
+  async updateStockFromSale(
+    ext_id: string,
+    dto: UpdateStockFromSaleDto,
+  ): Promise<void> {
     const stock_ext_id = ext_id.trim();
     const { type, qty, updated_by } = dto;
-  
+
     if (qty <= 0) {
       throw new BadRequestException({
         status: { success: false, message: 'Quantity must be greater than 0' },
       });
     }
-  
+
     const stock = await this.stockRepo.findOne({
       where: { external_id: stock_ext_id },
     });
-  
+
     if (!stock) {
       throw new NotFoundException({
         status: { success: false, message: 'Stock not found' },
       });
     }
-  
+
     const qty_before = stock.avail_qty;
     const saleType = type.toUpperCase();
     const isSold = saleType === 'SALE' || saleType === 'LAYAWAY';
-  
+
     if (isSold) {
       if (stock.avail_qty < qty) {
         throw new BadRequestException({
-          status: { success: false, message: 'Not enough available quantity to sell' },
+          status: {
+            success: false,
+            message: 'Not enough available quantity to sell',
+          },
         });
       }
       stock.avail_qty -= qty;
+      stock.sold_qty = (stock.sold_qty || 0) + qty; // <--- update sold_qty here
     } else {
       stock.avail_qty += qty;
+      stock.sold_qty = Math.max((stock.sold_qty || 0) - qty, 0); // <--- optionally decrease sold_qty if it's a return
     }
-  
+
     stock.updated_by = updated_by;
     stock.updated_at = new Date();
     await this.stockRepo.save(stock);
-  
+
     const source = isSold ? saleType : 'CANCEL';
     const movementType = isSold ? 'OUTBOUND' : 'INBOUND';
-  
+
     await this.stockMovementService.logStockMovement({
       stockExtId: stock_ext_id,
       type: movementType,
@@ -274,7 +285,7 @@ export class ProductsService {
       createdBy: updated_by,
     });
   }
-  
+
   async updateProductStock(
     ext_id: string,
     dto: UpdateProductStockDto,
@@ -730,6 +741,90 @@ export class ProductsService {
         stock,
         miscVals,
       ),
+    };
+  }
+
+  async findConsignorItems(
+    consignor_ext_id: string,
+    dto: FindConsignorProductsDto,
+  ): Promise<IProductsResponse> {
+    const { searchValue, pageNumber, displayPerPage, sortBy, orderBy } = dto;
+
+    await this.clientService.findOne(consignor_ext_id.trim(), true);
+
+    const query = this.productRepo.createQueryBuilder('product');
+    if (searchValue) {
+      query.andWhere(
+        `(product.name ILIKE :search OR product.material ILIKE :search OR product.hardware ILIKE :search OR product.code ILIKE :search OR product.measurement ILIKE :search OR product.model ILIKE :search)`,
+        { search: `%${searchValue}%` },
+      );
+    }
+
+    query
+      .andWhere('product.is_consigned = true')
+      .andWhere('product.consignor_ext_id = :consignorId', {
+        consignorId: consignor_ext_id.trim(),
+      });
+
+    query
+      .orderBy(`product.${sortBy}`, orderBy.toUpperCase() as 'ASC' | 'DESC')
+      .skip((pageNumber - 1) * displayPerPage)
+      .take(displayPerPage);
+
+    const [products, totalCount] = await query.getManyAndCount();
+
+    const results: IProduct[] = await Promise.all(
+      products.map(async (product) => {
+        const [condition, stock, miscVals, performedBy] = await Promise.all([
+          this.conditionRepo.findOne({
+            where: { product_ext_id: product.external_id },
+          }),
+          this.stockRepo.findOne({
+            where: { product_ext_id: product.external_id },
+          }),
+          this.validateMisc(
+            product.category_ext_id,
+            product.brand_ext_id,
+            product.auth_ext_id,
+            product.consignor_ext_id,
+          ),
+          this.userService.getPerformedBy(
+            product.created_by,
+            product.updated_by,
+            product.deleted_by,
+          ),
+        ]);
+
+        return this.buildProductResponse(
+          stock?.external_id,
+          {
+            ...product,
+            created_by:
+              performedBy.data.create?.name || product.created_by || null,
+            updated_by:
+              performedBy.data.update?.name || product.updated_by || null,
+            deleted_by:
+              performedBy.data.delete?.name || product.deleted_by || null,
+          },
+          condition,
+          stock,
+          miscVals,
+        );
+      }),
+    );
+
+    return {
+      status: {
+        success: true,
+        message: 'Products fetched successfully',
+      },
+      data: results,
+      meta: {
+        page: pageNumber,
+        totalNumber: totalCount,
+        totalPages: Math.ceil(totalCount / displayPerPage),
+        displayPage: displayPerPage,
+      },
     };
   }
 

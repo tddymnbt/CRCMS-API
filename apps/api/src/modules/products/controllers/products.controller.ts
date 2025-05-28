@@ -15,7 +15,10 @@ import {
   IProductResponse,
   IProductsResponse,
 } from '../interfaces/product.interface';
-import { FindProductsDto } from '../dtos/find-all-products.dto';
+import {
+  FindConsignorProductsDto,
+  FindProductsDto,
+} from '../dtos/find-all-products.dto';
 import { UpdateProductStockDto } from '../dtos/update-p-stock.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
 import { DeleteProductDto } from '../dtos/delete-product.dto';
@@ -82,5 +85,14 @@ export class ProductsController {
     @Body() dto: FindProductTransactionsDto,
   ): Promise<IProductTransactionsResponse> {
     return this.stockMovementService.getProductTransaction(id, dto);
+  }
+
+  @Get('consignor/:id/items')
+  @ApiOperation({ summary: 'Find all consignor products' })
+  async findAllConsignorItems(
+    @Param('id') id: string,
+    @Query() query: FindConsignorProductsDto,
+  ): Promise<IProductsResponse> {
+    return this.service.findConsignorItems(id, query);
   }
 }
