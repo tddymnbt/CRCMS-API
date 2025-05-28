@@ -102,3 +102,65 @@ export class FindProductsDto {
   })
   orderBy: 'asc' | 'desc' = 'asc';
 }
+
+
+export class FindConsignorProductsDto {
+  @ApiProperty({
+    required: false,
+    description:
+      'Search by name, material, hardware, code, measurement, model, price',
+    example: '',
+  })
+  @IsOptional()
+  @IsString()
+  searchValue?: string;
+
+  @ApiProperty({
+    required: false,
+    default: 1,
+    description: 'Page number for pagination',
+    example: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  pageNumber: number = 1;
+
+  @ApiProperty({
+    required: false,
+    default: 10,
+    description: 'Number of items per page',
+    example: 10,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  displayPerPage: number = 10;
+
+  @ApiProperty({
+    required: false,
+    default: 'name',
+    description: 'Field to sort by',
+    example: 'name',
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  sortBy: string = 'name';
+
+  @ApiProperty({
+    required: false,
+    default: 'asc',
+    description: 'Sort order: asc or desc',
+    example: 'asc',
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['asc', 'ASC', 'desc', 'DESC'], {
+    message: 'orderBy must be ASC or DESC',
+  })
+  orderBy: 'asc' | 'desc' = 'asc';
+}

@@ -46,10 +46,21 @@ export class SalesService {
 
   async findAll(
     findDto: FindSalesDto,
-    mode: 'A' | 'CN' | 'R' | 'L' | 'C' | 'OD' | 'FP',
+    mode: 'A' | 'CN' | 'R' | 'L' | 'C' | 'OD' | 'FP' | 'CT',
+    client_ext_id?: string,
   ): Promise<ISalesResponse> {
+    // A = All, CN = Consign, R = Regular, L = Layaway, C = Cancelled, OD = Overdue, FP = Fully paid, CT = Client's transctions
     const { searchValue, pageNumber, displayPerPage, sortBy, orderBy } =
       findDto;
+
+    if (mode === 'CT' && !client_ext_id) {
+      throw new NotFoundException({
+        status: {
+          success: false,
+          message: 'Client`s external Id is required',
+        },
+      });
+    }
 
     const skip = (pageNumber - 1) * displayPerPage;
 
@@ -103,6 +114,11 @@ export class SalesService {
           .andWhere(`sl.current_due_date < NOW()`)
           .andWhere(`s.type = 'L'`)
           .andWhere(`s.status = 'Deposit'`);
+        break;
+      case 'CT':
+        queryBuilder.andWhere(`s.client_ext_id = :clientId`, {
+          clientId: client_ext_id.trim(),
+        });
         break;
       // case 'A' means all — no extra filter
     }

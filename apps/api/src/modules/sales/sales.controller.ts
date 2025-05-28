@@ -61,6 +61,15 @@ export class SalesController {
     return this.service.findAll(query, 'FP');
   }
 
+  @Get('client/:id/transactions')
+  @ApiOperation({ summary: 'Find all client sales transactions' })
+  async findAllClientTransactions(
+    @Param('id') id: string,
+    @Query() query: FindSalesDto,
+  ): Promise<ISalesResponse> {
+    return this.service.findAll(query, 'CT', id);
+  }
+
   @Get('id/:id')
   @ApiOperation({ summary: 'Find specific sale' })
   async findOne(@Param('id') id: string): Promise<ISaleResponse> {
