@@ -93,7 +93,9 @@ export class StockMovementService {
         `(
           sm.type ILIKE :search
           OR sm.source ILIKE :search
-          OR CAST(sm.qty AS TEXT) ILIKE :search
+          OR CAST(sm.qty_before AS TEXT) ILIKE :search
+          OR CAST(sm.qty_change AS TEXT) ILIKE :search
+          OR CAST(sm.qty_after AS TEXT) ILIKE :search
         )`,
         { search: `%${searchValue}%` },
       );
