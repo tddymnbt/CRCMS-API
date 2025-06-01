@@ -12,6 +12,7 @@ import { ProductsService } from '../services/products.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateProductDto } from '../dtos/create-product.dto';
 import {
+  IProductCount,
   IProductResponse,
   IProductsResponse,
 } from '../interfaces/product.interface';
@@ -94,5 +95,13 @@ export class ProductsController {
     @Query() query: FindConsignorProductsDto,
   ): Promise<IProductsResponse> {
     return this.service.findConsignorItems(id, query);
+  }
+
+  @Get('stats/counts')
+  @ApiOperation({ summary: 'Find product count' })
+  async getCounts(
+    @Query() query: { isConsigned: boolean },
+  ): Promise<IProductCount> {
+    return this.service.getProductCounts(query.isConsigned);
   }
 }

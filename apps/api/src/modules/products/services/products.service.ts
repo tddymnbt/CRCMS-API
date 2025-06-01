@@ -6,7 +6,14 @@ import {
 } from '@nestjs/common';
 import { Product } from '../entities/product.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, ILike, Not, Repository } from 'typeorm';
+import {
+  Between,
+  FindOptionsWhere,
+  ILike,
+  MoreThanOrEqual,
+  Not,
+  Repository,
+} from 'typeorm';
 import { ProductCondition } from '../entities/product-condition.entity';
 import { Stock } from '../entities/stock.entity';
 import { CreateProductDto } from '../dtos/create-product.dto';
@@ -17,6 +24,7 @@ import { AuthenticatorsService } from './authenticators.service';
 import {
   IPMiscsResponse,
   IProduct,
+  IProductCount,
   IProductResponse,
   IProductsResponse,
 } from '../interfaces/product.interface';
@@ -32,6 +40,7 @@ import {
 } from '../dtos/update-p-stock.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
 import { UsersService } from 'src/modules/users/users.service';
+import * as moment from 'moment';
 
 @Injectable()
 export class ProductsService {
@@ -110,8 +119,10 @@ export class ProductsService {
       dto.consignor_selling_price = null;
       dto.consigned_date = null;
     } else {
-      const throwIfMissing = (field: any, message: string) => {
-        // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type
+      const throwIfMissing = (
+        field: string | number,
+        message: string,
+      ): void => {
         if (!field) {
           throw new BadRequestException({
             status: { success: false, message },
@@ -387,8 +398,10 @@ export class ProductsService {
       dto.consignor_selling_price = null;
       dto.consigned_date = null;
     } else {
-      const throwIfMissing = (field: any, message: string) => {
-        // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type
+      const throwIfMissing = (
+        field: string | number,
+        message: string,
+      ): void => {
         if (!field) {
           throw new BadRequestException({
             status: { success: false, message },
@@ -895,6 +908,77 @@ export class ProductsService {
       updated_by: product.updated_by,
       deleted_at: product.deleted_at,
       deleted_by: product.deleted_by,
+    };
+  }
+
+  async getProductCounts(isConsigned: boolean = false): Promise<IProductCount> {
+    const today = moment().startOf('day').toDate();
+    const yesterday = moment().subtract(1, 'day').startOf('day').toDate();
+    const lastWeek = moment().subtract(7, 'days').startOf('day').toDate();
+    const lastMonth = moment().subtract(30, 'days').startOf('day').toDate();
+    const lastYear = moment().subtract(365, 'days').startOf('day').toDate();
+
+    const whereClause: FindOptionsWhere<Stock> = {
+      deleted_at: null,
+    };
+    if (isConsigned) {
+      whereClause.is_consigned = true;
+    }
+
+    const [
+      totalCount,
+      todayCount,
+      yesterdayCount,
+      lastWeekCount,
+      lastMonthCount,
+      lastYearCount,
+    ] = await Promise.all([
+      this.stockRepo.count({ where: { ...whereClause } }),
+      this.stockRepo.count({
+        where: {
+          ...whereClause,
+          created_at: MoreThanOrEqual(today),
+        },
+      }),
+      this.stockRepo.count({
+        where: {
+          ...whereClause,
+          created_at: Between(yesterday, today),
+        },
+      }),
+      this.stockRepo.count({
+        where: {
+          ...whereClause,
+          created_at: MoreThanOrEqual(lastWeek),
+        },
+      }),
+      this.stockRepo.count({
+        where: {
+          ...whereClause,
+          created_at: MoreThanOrEqual(lastMonth),
+        },
+      }),
+      this.stockRepo.count({
+        where: {
+          ...whereClause,
+          created_at: MoreThanOrEqual(lastYear),
+        },
+      }),
+    ]);
+
+    return {
+      status: {
+        success: true,
+        message: 'Successfully fetched data',
+      },
+      data: {
+        totalCount: totalCount.toString(),
+        todayCount: todayCount.toString(),
+        yesterdayCount: yesterdayCount.toString(),
+        lastWeekCount: lastWeekCount.toString(),
+        lastMonthCount: lastMonthCount.toString(),
+        lastYearCount: lastYearCount.toString(),
+      },
     };
   }
 }
