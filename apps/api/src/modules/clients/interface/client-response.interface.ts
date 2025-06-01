@@ -47,3 +47,18 @@ export interface IClient {
   deleted_by?: string;
   bank?: IClientBankDetails;
 }
+
+export interface IClientCount {
+  status: {
+    success: boolean;
+    message: string;
+  };
+  data: {
+    totalCount: string;
+    todayCount: string;
+    yesterdayCount: string;
+    lastWeekCount: string;
+    lastMonthCount: string;
+    lastYearCount: string;
+  };
+}
