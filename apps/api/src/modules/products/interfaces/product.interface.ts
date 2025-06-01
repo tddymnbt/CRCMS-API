@@ -80,3 +80,18 @@ export interface IPMiscsResponse {
   authenticator_data?: IProductMisc;
   consignor_data?: IClient;
 }
+
+export interface IProductCount {
+  status: {
+    success: boolean;
+    message: string;
+  };
+  data: {
+    totalCount: string;
+    todayCount: string;
+    yesterdayCount: string;
+    lastWeekCount: string;
+    lastMonthCount: string;
+    lastYearCount: string;
+  };
+}
