@@ -5,11 +5,18 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Not, Repository } from 'typeorm';
+import {
+  Between,
+  FindOptionsWhere,
+  MoreThanOrEqual,
+  Not,
+  Repository,
+} from 'typeorm';
 import { Client } from './entities/client.entity';
 import {
   IClient,
   IClientBankDetails,
+  IClientCount,
   IClientResponse,
   IClientsResponse,
 } from './interface/client-response.interface';
@@ -20,6 +27,7 @@ import { ClientBankDetail } from './entities/client-bank.entity';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { BirthMonthParamDto } from './dto/get-celebrant.dto';
 import { UsersService } from '../users/users.service';
+import * as moment from 'moment';
 
 @Injectable()
 export class ClientsService {
@@ -77,7 +85,7 @@ export class ClientsService {
 
     const clientsWithBank = await Promise.all(
       clients.map(async (client) => {
-        const { id: _, ...clientSafe } = client as Client;
+        const { ...clientSafe } = client as Client;
 
         const [bank, performedBy] = await Promise.all([
           this.clientBankRepo.findOne({
@@ -92,13 +100,7 @@ export class ClientsService {
 
         let bankSafe: IClientBankDetails | null = null;
         if (bank) {
-          const {
-            id: __,
-            client_ext_id,
-            created_at,
-            updated_at,
-            ...safeBank
-          } = bank as ClientBankDetail;
+          const { ...safeBank } = bank as ClientBankDetail;
           bankSafe = safeBank;
         }
 
@@ -201,17 +203,11 @@ export class ClientsService {
       ),
     ]);
 
-    const { id: _, ...clientSafe } = client as Client;
+    const { ...clientSafe } = client as Client;
 
     let bankSafe: IClientBankDetails | null = null;
     if (clientBank) {
-      const {
-        id: __,
-        client_ext_id,
-        created_at,
-        updated_at,
-        ...safeBank
-      } = clientBank as ClientBankDetail;
+      const { ...safeBank } = clientBank as ClientBankDetail;
       bankSafe = safeBank;
     }
 
@@ -479,6 +475,75 @@ export class ClientsService {
         totalNumber: total,
         totalPages: Math.ceil(total / 1000),
         displayPage: 1000,
+      },
+    };
+  }
+
+  async getClientCounts(): Promise<IClientCount> {
+    const today = moment().startOf('day').toDate();
+    const yesterday = moment().subtract(1, 'day').startOf('day').toDate();
+    const lastWeek = moment().subtract(7, 'days').startOf('day').toDate();
+    const lastMonth = moment().subtract(30, 'days').startOf('day').toDate();
+    const lastYear = moment().subtract(365, 'days').startOf('day').toDate();
+
+    const [
+      totalCount,
+      todayCount,
+      yesterdayCount,
+      lastWeekCount,
+      lastMonthCount,
+      lastYearCount,
+    ] = await Promise.all([
+      this.clientRepo.count({ where: { is_active: true, deleted_at: null } }),
+      this.clientRepo.count({
+        where: {
+          is_active: true,
+          deleted_at: null,
+          created_at: MoreThanOrEqual(today),
+        },
+      }),
+      this.clientRepo.count({
+        where: {
+          is_active: true,
+          deleted_at: null,
+          created_at: Between(yesterday, today),
+        },
+      }),
+      this.clientRepo.count({
+        where: {
+          is_active: true,
+          deleted_at: null,
+          created_at: MoreThanOrEqual(lastWeek),
+        },
+      }),
+      this.clientRepo.count({
+        where: {
+          is_active: true,
+          deleted_at: null,
+          created_at: MoreThanOrEqual(lastMonth),
+        },
+      }),
+      this.clientRepo.count({
+        where: {
+          is_active: true,
+          deleted_at: null,
+          created_at: MoreThanOrEqual(lastYear),
+        },
+      }),
+    ]);
+
+    return {
+      status: {
+        success: true,
+        message: 'Successfully fetched data',
+      },
+      data: {
+        totalCount: totalCount.toString(),
+        todayCount: todayCount.toString(),
+        yesterdayCount: yesterdayCount.toString(),
+        lastWeekCount: lastWeekCount.toString(),
+        lastMonthCount: lastMonthCount.toString(),
+        lastYearCount: lastYearCount.toString(),
       },
     };
   }

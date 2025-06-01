@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import {
+  IClientCount,
   IClientResponse,
   IClientsResponse,
 } from './interface/client-response.interface';
@@ -68,5 +69,11 @@ export class ClientsController {
     @Body() dto: BirthMonthParamDto,
   ): Promise<IClientsResponse> {
     return this.service.getClientsByBirthMonth(dto);
+  }
+
+  @Get('stats/counts')
+  @ApiOperation({ summary: 'Find client count' })
+  async getCounts(): Promise<IClientCount> {
+    return this.service.getClientCounts();
   }
 }
