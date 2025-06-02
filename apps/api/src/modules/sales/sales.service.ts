@@ -50,8 +50,16 @@ export class SalesService {
     client_ext_id?: string,
   ): Promise<ISalesResponse> {
     // A = All, CN = Consign, R = Regular, L = Layaway, C = Cancelled, OD = Overdue, FP = Fully paid, CT = Client's transctions
-    const { searchValue, pageNumber, displayPerPage, sortBy, orderBy } =
-      findDto;
+
+    const {
+      searchValue,
+      pageNumber,
+      displayPerPage,
+      sortBy,
+      orderBy,
+      dateFrom,
+      dateTo,
+    } = findDto;
 
     if (mode === 'CT' && !client_ext_id) {
       throw new NotFoundException({
@@ -89,6 +97,60 @@ export class SalesService {
         )`,
         { search: `%${searchValue}%` },
       );
+    }
+
+    if (dateFrom && dateTo) {
+      const fromDate = new Date(dateFrom);
+      const toDate = new Date(dateTo);
+
+      if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+        throw new BadRequestException({
+          status: {
+            success: false,
+            message: 'Invalid date format. Please use YYYY-MM-DD.',
+          },
+        });
+      }
+
+      if (fromDate > toDate) {
+        throw new BadRequestException({
+          status: {
+            success: false,
+            message: '`dateFrom` must not be after `dateTo`.',
+          },
+        });
+      }
+
+      queryBuilder.andWhere(`s.date_purchased BETWEEN :from AND :to`, {
+        from: fromDate.toISOString(),
+        to: toDate.toISOString(),
+      });
+    } else if (dateFrom) {
+      const fromDate = new Date(dateFrom);
+      if (isNaN(fromDate.getTime())) {
+        throw new BadRequestException({
+          status: {
+            success: false,
+            message: 'Invalid dateFrom format. Please use YYYY-MM-DD.',
+          },
+        });
+      }
+      queryBuilder.andWhere(`s.date_purchased >= :from`, {
+        from: fromDate.toISOString(),
+      });
+    } else if (dateTo) {
+      const toDate = new Date(dateTo);
+      if (isNaN(toDate.getTime())) {
+        throw new BadRequestException({
+          status: {
+            success: false,
+            message: 'Invalid dateTo format. Please use YYYY-MM-DD.',
+          },
+        });
+      }
+      queryBuilder.andWhere(`s.date_purchased <= :to`, {
+        to: toDate.toISOString(),
+      });
     }
 
     // Apply mode filtering carefully

@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   Min,
   IsIn,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -68,4 +69,24 @@ export class FindSalesDto {
     message: 'orderBy must be ASC or DESC',
   })
   orderBy: 'asc' | 'desc' = 'desc';
+
+  @ApiProperty({
+    required: false,
+    description: 'Start date filter (YYYY-MM-DD)',
+    example: '2025-06-01',
+  })
+  @IsOptional()
+  @IsString()
+  @ValidateIf((dto) => dto.dateTo)
+  dateFrom?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'End date filter (YYYY-MM-DD)',
+    example: '2025-06-30',
+  })
+  @IsOptional()
+  @IsString()
+  @ValidateIf((dto) => dto.dateFrom)
+  dateTo?: string;
 }
