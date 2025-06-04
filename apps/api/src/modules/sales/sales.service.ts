@@ -433,7 +433,10 @@ export class SalesService {
     const paymentLog = this.paymentLogsRepo.create({
       external_id: payment_ext_id,
       sale_ext_id: sale_ext_id,
-      amount: dto.type === 'R' ? totalAmount : Number(dto.payment.amount),
+      amount:
+        dto.type === 'R'
+          ? totalAmount
+          : Number(dto.payment.amount.replace(/,/g, '')),
       payment_date: dto.payment.payment_date,
       payment_method: dto.payment.payment_method,
       is_deposit: isDeposit,
@@ -458,7 +461,8 @@ export class SalesService {
     let saleLayaway = null;
 
     if (dto.type === 'L') {
-      const depositAmount = totalAmount - Number(dto.payment.amount);
+      const depositAmount =
+        totalAmount - Number(dto.payment.amount.replace(/,/g, ''));
       saleLayaway = this.saleLayawaysRepo.create({
         sale_ext_id: sale_ext_id,
         no_of_months: dto.layaway.no_of_months,
@@ -572,7 +576,9 @@ export class SalesService {
     }
 
     //Record payment
-    if (Number(dto.payment.amount) > Number(outstandingBalance)) {
+    if (
+      Number(dto.payment.amount.replace(/,/g, '')) > Number(outstandingBalance)
+    ) {
       throw new BadRequestException({
         status: {
           success: false,
@@ -582,14 +588,16 @@ export class SalesService {
     }
 
     const payment_ext_id = `P-${generateUniqueId(10)}`;
-    const isDeposit = Number(dto.payment.amount) < Number(outstandingBalance);
+    const isDeposit =
+      Number(dto.payment.amount.replace(/,/g, '')) < Number(outstandingBalance);
     const isFinalPayment =
-      Number(dto.payment.amount) === Number(outstandingBalance);
+      Number(dto.payment.amount.replace(/,/g, '')) ===
+      Number(outstandingBalance);
 
     const paymentLog = this.paymentLogsRepo.create({
       external_id: payment_ext_id,
       sale_ext_id: layawaySales.external_id.trim(),
-      amount: Number(dto.payment.amount),
+      amount: Number(dto.payment.amount.replace(/,/g, '')),
       payment_date: dto.payment.payment_date,
       payment_method: dto.payment.payment_method,
       is_deposit: isDeposit,
