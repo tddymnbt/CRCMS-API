@@ -37,6 +37,9 @@ export class Sales {
   @Column({ type: 'varchar', length: 20 })
   status: 'Fully paid' | 'Not paid' | 'Deposit' | 'Cancelled';
 
+  @Column({ type: 'varchar', array: true, nullable: true })
+  images?: string[];
+
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
 

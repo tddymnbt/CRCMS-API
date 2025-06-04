@@ -389,7 +389,6 @@ export class SalesService {
         qty: qty,
         unit_price: unitPrice,
         subtotal: subtotal,
-        images: product.images ?? [],
         created_by: dto.created_by,
       });
     });
@@ -424,6 +423,7 @@ export class SalesService {
       discount_flat_rate: Number(dto.discount_flat_rate),
       date_purchased: dto.date_purchased,
       status: dto.type === 'R' ? 'Fully paid' : 'Deposit',
+      images: dto.images ?? [],
       created_by: dto.created_by,
     });
 
@@ -950,7 +950,6 @@ export class SalesService {
         unit_price: Number(item.unit_price).toFixed(2),
         qty: item.qty,
         subtotal: Number(item.subtotal).toFixed(2),
-        images: item.images ?? [],
       };
     });
 
@@ -1006,6 +1005,7 @@ export class SalesService {
         payment_date: payment.payment_date,
         payment_method: payment.payment_method,
       })),
+      images: saleEntity.images,
       created_at: saleEntity.created_at,
       created_by: saleEntity.created_by,
       cancelled_at: saleEntity.cancelled_at ?? null,

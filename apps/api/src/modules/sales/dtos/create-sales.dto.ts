@@ -54,11 +54,6 @@ export class ItemProductDto {
   @IsNotEmpty({ message: 'qty is required' })
   @Min(1)
   qty: number;
-
-  @ApiProperty({ example: ['img1.jpg', 'img2.jpg'], required: false })
-  @IsOptional()
-  @IsArray({ message: 'Images must be an array of strings' })
-  images?: string[];
 }
 
 export class LayawayPlanDto {
@@ -137,6 +132,11 @@ export class SalesDto {
   @ValidateNested()
   @Type(() => PaymentLogDto)
   payment: PaymentLogDto;
+
+  @ApiProperty({ example: ['img1.jpg', 'img2.jpg'], required: false })
+  @IsOptional()
+  @IsArray({ message: 'Images must be an array of strings' })
+  images?: string[];
 
   @ApiProperty({ example: 'admin_user' })
   @IsString({ message: 'Created By must be a string' })
