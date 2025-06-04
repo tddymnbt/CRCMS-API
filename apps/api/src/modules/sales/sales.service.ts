@@ -461,22 +461,36 @@ export class SalesService {
     let saleLayaway = null;
 
     if (dto.type === 'L') {
-      const depositAmount =
+      if (Number(dto.payment.amount.replace(/,/g, '')) > Number(totalAmount)) {
+        throw new BadRequestException({
+          status: {
+            success: false,
+            message: 'Payment amount is greater than the total amount due.',
+          },
+        });
+      }
+
+      const amountDue =
         totalAmount - Number(dto.payment.amount.replace(/,/g, ''));
       saleLayaway = this.saleLayawaysRepo.create({
         sale_ext_id: sale_ext_id,
         no_of_months: dto.layaway.no_of_months,
-        amount_due: depositAmount,
+        amount_due: amountDue,
         payment_date: null,
         current_due_date: dto.layaway.due_date,
         orig_due_date: dto.layaway.due_date,
         is_extended: false,
-        status: 'Unpaid',
+        status: amountDue > 0 ? 'Unpaid' : 'Paid',
         created_by: dto.created_by,
       });
 
       await this.saleLayawaysRepo.save(saleLayaway);
+
+      if (amountDue <= 0) {
+        sales.status = 'Fully paid';
+      }
     }
+
     const createdBy = await this.userService.getPerformedBy(sales.created_by);
     const cancelledBy = await this.userService.getPerformedBy(
       sales.cancelled_by,
