@@ -50,6 +50,7 @@ export interface ISale {
   discount_flat_rate: string;
   status: string;
   payment_history: IPaymentHistory[];
+  images: string[];
   created_at: Date;
   created_by: string;
   cancelled_at: Date;
@@ -63,7 +64,6 @@ export interface IProductUnit {
   unit_price: string;
   qty: number;
   subtotal: string;
-  images: string[];
 }
 
 export interface IPaymentHistory {

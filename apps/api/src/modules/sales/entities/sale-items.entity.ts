@@ -30,9 +30,6 @@ export class SalesItems {
   @Column({ type: 'decimal' })
   subtotal: number;
 
-  @Column({ type: 'varchar', array: true, nullable: true })
-  images?: string[];
-
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
 
