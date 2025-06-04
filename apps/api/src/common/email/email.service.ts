@@ -36,11 +36,8 @@ export class EmailService {
       'email',
       'template',
     );
-    const backgroundImagePath = path.join(currentDirectory, 'wood.png');
-    const philGoodLogoPath = path.join(
-      currentDirectory,
-      'lwph_logo_black.png',
-    );
+    // const backgroundImagePath = path.join(currentDirectory, 'wood.png');
+    // const philGoodLogoPath = path.join(currentDirectory, 'lwph_logo_black.png');
     const facebookIconPath = path.join(currentDirectory, 'fb.png');
     const instagramIconPath = path.join(currentDirectory, 'ig.png');
     const tiktokIconPath = path.join(currentDirectory, 'tktk.png');
@@ -57,16 +54,16 @@ export class EmailService {
       subject,
       html: htmlContent,
       attachments: [
-        {
-          filename: 'wood.png',
-          path: backgroundImagePath,
-          cid: 'backgroundimage',
-        },
-        {
-          filename: 'lwph_logo_black.png',
-          path: philGoodLogoPath,
-          cid: 'philgoodlogo',
-        },
+        // {
+        //   filename: 'wood.png',
+        //   path: backgroundImagePath,
+        //   cid: 'backgroundimage',
+        // },
+        // {
+        //   filename: 'lwph_logo_black.png',
+        //   path: philGoodLogoPath,
+        //   cid: 'philgoodlogo',
+        // },
         {
           filename: 'fb.png',
           path: facebookIconPath,
