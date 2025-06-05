@@ -94,6 +94,7 @@ export class SalesService {
             s.external_id ILIKE :search 
             OR s.created_by ILIKE :search
             OR p.name ILIKE :search
+            OR p.code ILIKE :search
             OR CONCAT(c.first_name, ' ', c.last_name) ILIKE :search
         )`,
         { search: `%${searchValue}%` },
