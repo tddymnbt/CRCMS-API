@@ -778,67 +778,6 @@ export class SalesService {
     return await this.findOne(salesLayawayDetails.sale_ext_id.trim());
   }
 
-  async validateProducts_old(
-    products: { product_ext_id: string; qty?: number }[],
-  ): Promise<IProduct[]> {
-    const seen = new Set<string>();
-    const duplicates: string[] = [];
-    const insufficientStock: string[] = [];
-    const notFoundProducts: string[] = [];
-    const validatedProducts: IProduct[] = [];
-
-    for (const item of products) {
-      const trimmedId = item.product_ext_id.trim();
-
-      // Check duplicate
-      if (seen.has(trimmedId)) {
-        duplicates.push(trimmedId);
-        continue;
-      }
-      seen.add(trimmedId);
-
-      // Fetch product
-      const productData = await this.productService
-        .findOne(trimmedId)
-        .then((res) => res?.data ?? null);
-
-      if (!productData) {
-        notFoundProducts.push(trimmedId);
-        continue;
-      }
-
-      // Check quantity
-      if (item.qty > productData.stock.qty_in_stock) {
-        insufficientStock.push(
-          `${trimmedId} (requested: ${item.qty}, available: ${productData.stock.qty_in_stock})`,
-        );
-      }
-
-      validatedProducts.push(productData);
-    }
-
-    // Throw errors if any
-    if (duplicates.length > 0) {
-      throw new BadRequestException(
-        `Duplicate product_ext_id(s) found: ${duplicates.join(', ')}`,
-      );
-    }
-
-    if (notFoundProducts.length > 0) {
-      throw new NotFoundException(
-        `Product(s) not found: ${notFoundProducts.join(', ')}`,
-      );
-    }
-
-    if (insufficientStock.length > 0) {
-      throw new BadRequestException(
-        `Insufficient stock for product(s): ${insufficientStock.join(', ')}`,
-      );
-    }
-
-    return validatedProducts;
-  }
-
   async validateProducts(
     products: { product_ext_id: string; qty?: number }[],
     mode: 'create' | 'read' = 'create',
@@ -946,6 +885,8 @@ export class SalesService {
       return {
         external_id: item.product_ext_id,
         name: product?.name ?? '',
+        code: product?.code ?? '',
+        inclusions: product?.inclusions ?? [],
         is_consigned: product?.is_consigned ?? false,
         unit_price: Number(item.unit_price).toFixed(2),
         qty: item.qty,
