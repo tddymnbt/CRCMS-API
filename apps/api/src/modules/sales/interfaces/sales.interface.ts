@@ -60,6 +60,8 @@ export interface ISale {
 export interface IProductUnit {
   external_id: string;
   name: string;
+  code: string;
+  inclusions: string[];
   is_consigned: boolean;
   unit_price: string;
   qty: number;
