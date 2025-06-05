@@ -444,8 +444,6 @@ export class SalesService {
       created_by: dto.created_by,
     });
 
-    await this.salesRepo.save(sales);
-
     // Update stock before saving sales items
     for (const item of salesItems) {
       await this.productService.updateStockFromSale(item.product_ext_id, {
@@ -454,9 +452,6 @@ export class SalesService {
         updated_by: dto.created_by,
       });
     }
-
-    await this.salesItemsRepo.save(salesItems);
-    await this.paymentLogsRepo.save(paymentLog);
 
     let saleLayaway = null;
 
@@ -490,6 +485,10 @@ export class SalesService {
         sales.status = 'Fully paid';
       }
     }
+
+    await this.salesRepo.save(sales);
+    await this.salesItemsRepo.save(salesItems);
+    await this.paymentLogsRepo.save(paymentLog);
 
     const createdBy = await this.userService.getPerformedBy(sales.created_by);
     const cancelledBy = await this.userService.getPerformedBy(
