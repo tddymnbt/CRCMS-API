@@ -19,6 +19,7 @@ import {
   IProductUnit,
   ISaleResponse,
   ISalesResponse,
+  ISaleTransactionsResponse,
   ISMiscsResponse,
 } from './interfaces/sales.interface';
 import { FindSalesDto } from './dtos/find-all-sales.dto';
@@ -1009,6 +1010,247 @@ export class SalesService {
       created_by: saleEntity.created_by,
       cancelled_at: saleEntity.cancelled_at ?? null,
       cancelled_by: saleEntity.cancelled_by ?? null,
+    };
+  }
+
+  async getSalesStats(
+    mode: 'A' | 'CN' | 'R' | 'L',
+    dateFrom?: string,
+    dateTo?: string,
+  ): Promise<ISaleTransactionsResponse> {
+    const statuses = ['Fully paid', 'Deposit', 'Cancelled'];
+    const data: Partial<ISaleTransactionsResponse['data']> = {}; // Partial<ISaleTransactionsResponse['data']>
+
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    const validateDateRange = () => {
+      let fromDate: Date | undefined;
+      let toDate: Date | undefined;
+
+      if (dateFrom) {
+        fromDate = new Date(dateFrom);
+        if (isNaN(fromDate.getTime())) {
+          throw new BadRequestException({
+            status: {
+              success: false,
+              message: 'Invalid dateFrom format. Please use YYYY-MM-DD.',
+            },
+          });
+        }
+      }
+
+      if (dateTo) {
+        toDate = new Date(dateTo);
+        if (isNaN(toDate.getTime())) {
+          throw new BadRequestException({
+            status: {
+              success: false,
+              message: 'Invalid dateTo format. Please use YYYY-MM-DD.',
+            },
+          });
+        }
+      }
+
+      if (fromDate && toDate && fromDate > toDate) {
+        throw new BadRequestException({
+          status: {
+            success: false,
+            message: '`dateFrom` must not be after `dateTo`.',
+          },
+        });
+      }
+
+      return { fromDate, toDate };
+    };
+
+    const { fromDate, toDate } = validateDateRange();
+
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    const buildDateCondition = () => {
+      if (fromDate && toDate) {
+        return { start: fromDate, end: toDate };
+      } else if (fromDate) {
+        return { start: fromDate };
+      } else if (toDate) {
+        return { end: toDate };
+      }
+      return {};
+    };
+
+    const buildQuery = (
+      status: string,
+      dateCondition: { start?: Date; end?: Date } = {},
+    ): Promise<{ totalAmount?: string; totalCount?: string }> => {
+      let query = null;
+
+      if (status === 'Deposit') {
+        query = this.salesRepo
+          .createQueryBuilder('s')
+          .leftJoin('payment_logs', 'pl', 'pl.sale_ext_id = s.external_id')
+          .select(
+            'SUM(s.total_amount) - COALESCE(SUM(pl.amount), 0)',
+            'totalAmount',
+          )
+          .addSelect('COUNT(*)', 'totalCount')
+          .where('s.status = :status', { status });
+      } else {
+        query = this.salesRepo
+          .createQueryBuilder('s')
+          .select('SUM(s.total_amount)', 'totalAmount')
+          .addSelect('COUNT(*)', 'totalCount')
+          .where('s.status = :status', { status });
+      }
+
+      if (mode !== 'A') {
+        switch (mode) {
+          case 'R':
+            query.andWhere(`s.type = 'R'`);
+            break;
+          case 'L':
+            query.andWhere(`s.type = 'L'`);
+            break;
+        }
+      }
+
+      if (dateCondition.start && dateCondition.end) {
+        query.andWhere('s.date_purchased BETWEEN :start AND :end', {
+          start: dateCondition.start.toISOString(),
+          end: dateCondition.end.toISOString(),
+        });
+      } else if (dateCondition.start) {
+        query.andWhere('s.date_purchased >= :start', {
+          start: dateCondition.start.toISOString(),
+        });
+      } else if (dateCondition.end) {
+        query.andWhere('s.date_purchased <= :end', {
+          end: dateCondition.end.toISOString(),
+        });
+      }
+
+      return query.getRawOne();
+    };
+
+    const formatKey = (
+      status: string,
+    ): keyof ISaleTransactionsResponse['data'] => {
+      if (status === 'Fully paid') return 'totalPaidSales';
+      if (status === 'Deposit') return 'totalPendingSales';
+      if (status === 'Cancelled') return 'totalCancelledSales';
+      throw new Error(`Unexpected status: ${status}`);
+    };
+
+    const dateCondition = buildDateCondition();
+
+    if (dateFrom || dateTo) {
+      // return only the date range results
+      for (const status of statuses) {
+        const result = await buildQuery(status, dateCondition);
+
+        data[formatKey(status)] = {
+          totalAmount: result?.totalAmount || '0',
+          totalCount: result?.totalCount || '0',
+        };
+      }
+
+      return {
+        status: {
+          success: true,
+          message: 'Successfully fetched data',
+        },
+        data: {
+          dataRange: {
+            from: fromDate ? fromDate.toISOString().split('T')[0] : null,
+            to: toDate ? toDate.toISOString().split('T')[0] : null,
+          },
+          ...data,
+        },
+      };
+    }
+
+    // Default: no date range provided — return full stats
+    const now = new Date();
+    const todayStart = new Date(now.toDateString());
+
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+
+    const lastWeekStart = new Date(todayStart);
+    lastWeekStart.setDate(todayStart.getDate() - 7);
+
+    const lastMonthStart = new Date(todayStart);
+    lastMonthStart.setMonth(todayStart.getMonth() - 1);
+
+    const lastYearStart = new Date(todayStart);
+    lastYearStart.setFullYear(todayStart.getFullYear() - 1);
+
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    const buildFullStatsQuery = (status: string) => {
+      let query = null;
+
+      if (status === 'Deposit') {
+        query = this.salesRepo
+          .createQueryBuilder('s')
+          .leftJoin('payment_logs', 'pl', 'pl.sale_ext_id = s.external_id')
+          .select(
+            'SUM(s.total_amount) - COALESCE(SUM(pl.amount), 0)',
+            'totalAmount',
+          )
+          .addSelect('COUNT(*)', 'totalCount')
+          .where('s.status = :status', { status });
+      } else {
+        query = this.salesRepo
+          .createQueryBuilder('s')
+          .select('SUM(s.total_amount)', 'totalAmount')
+          .addSelect('COUNT(*)', 'totalCount')
+          .where('s.status = :status', { status });
+      }
+
+      if (mode !== 'A') {
+        switch (mode) {
+          case 'R':
+            query.andWhere(`s.type = 'R'`);
+            break;
+          case 'L':
+            query.andWhere(`s.type = 'L'`);
+            break;
+        }
+      }
+
+      return query.getRawOne();
+    };
+
+    for (const status of statuses) {
+      const total = await buildFullStatsQuery(status);
+      const today = await buildQuery(status, { start: todayStart });
+      const yesterday = await buildQuery(status, {
+        start: yesterdayStart,
+        end: todayStart,
+      });
+      const lastWeek = await buildQuery(status, { start: lastWeekStart });
+      const lastMonth = await buildQuery(status, { start: lastMonthStart });
+      const lastYear = await buildQuery(status, { start: lastYearStart });
+
+      data[formatKey(status)] = {
+        totalAmount: total?.totalAmount || '0',
+        totalCount: total?.totalCount || '0',
+        todayAmount: today?.totalAmount || '0',
+        todayCount: today?.totalCount || '0',
+        yesterdayAmount: yesterday?.totalAmount || '0',
+        yesterdayCount: yesterday?.totalCount || '0',
+        lastWeekAmount: lastWeek?.totalAmount || '0',
+        lastWeekCount: lastWeek?.totalCount || '0',
+        lastMonthAmount: lastMonth?.totalAmount || '0',
+        lastMonthCount: lastMonth?.totalCount || '0',
+        lastYearAmount: lastYear?.totalAmount || '0',
+        lastYearCount: lastYear?.totalCount || '0',
+      };
+    }
+
+    return {
+      status: {
+        success: true,
+        message: 'Successfully fetched data',
+      },
+      data: data as ISaleTransactionsResponse['data'],
     };
   }
 }

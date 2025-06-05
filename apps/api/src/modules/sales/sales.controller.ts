@@ -1,12 +1,17 @@
 import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SalesDto } from './dtos/create-sales.dto';
-import { ISaleResponse, ISalesResponse } from './interfaces/sales.interface';
+import {
+  ISaleResponse,
+  ISalesResponse,
+  ISaleTransactionsResponse,
+} from './interfaces/sales.interface';
 import { SalesService } from './sales.service';
 import { FindSalesDto } from './dtos/find-all-sales.dto';
 import { RecordPaymentDto } from './dtos/record-payment.dto';
 import { CancelSaleDto } from './dtos/cancel-sale.dto';
 import { ExtendLayawayDueDateDto } from './dtos/extend-due-date.dto';
+import { GetAllSalesTransactionsStats } from './dtos/get-sales-trans-stats.dto';
 
 @ApiTags('sales')
 @Controller('sales')
@@ -103,5 +108,13 @@ export class SalesController {
     @Body() dto: ExtendLayawayDueDateDto,
   ): Promise<ISaleResponse> {
     return this.service.extendLayawayDueDate(id, dto);
+  }
+
+  @Get('transaction/stats')
+  @ApiOperation({ summary: 'Get sales transactions statistics' })
+  async findAllTransactionsStats(
+    @Query() query: GetAllSalesTransactionsStats,
+  ): Promise<ISaleTransactionsResponse> {
+    return this.service.getSalesStats(query.mode, query.dateFrom, query.dateTo);
   }
 }

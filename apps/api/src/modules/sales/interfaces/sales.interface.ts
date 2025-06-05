@@ -77,3 +77,34 @@ export interface ISMiscsResponse {
   product_Data?: IProduct;
   client_data?: IClient;
 }
+
+export interface ISaleTransactionsResponse {
+  status: {
+    success: boolean;
+    message: string;
+  };
+  data: {
+    dataRange?: {
+      from?: string;
+      to?: string;
+    };
+    totalPaidSales?: ISaleTransactionDetails;
+    totalPendingSales?: ISaleTransactionDetails;
+    totalCancelledSales?: ISaleTransactionDetails;
+  };
+}
+
+export interface ISaleTransactionDetails {
+  totalAmount: string;
+  totalCount: string;
+  todayAmount?: string;
+  todayCount?: string;
+  yesterdayAmount?: string;
+  yesterdayCount?: string;
+  lastWeekAmount?: string;
+  lastWeekCount?: string;
+  lastMonthAmount?: string;
+  lastMonthCount?: string;
+  lastYearAmount?: string;
+  lastYearCount?: string;
+}
