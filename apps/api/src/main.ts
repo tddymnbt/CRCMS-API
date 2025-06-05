@@ -33,7 +33,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('LWPH SIMS API Documentation')
-    .setDescription('UAT API for LWPH SIMS')
+    .setDescription('PROD API for LWPH SIMS')
     .setVersion('1.0')
     .addTag('api')
     .addBearerAuth(
