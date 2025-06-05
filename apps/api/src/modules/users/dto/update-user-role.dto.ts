@@ -1,10 +1,19 @@
-import { IsBoolean, IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateUserRoleDto {
-  @IsBoolean({ message: 'is_admin must be a boolean.' })
-  @IsNotEmpty({ message: 'is_admin is required.' })
-  is_admin: boolean;
+  @ApiProperty({
+    description: 'Name of the role to be updated',
+    example: 'Admin',
+  })
+  @IsString({ message: 'roleName must be a string.' })
+  @IsNotEmpty({ message: 'roleName is required.' })
+  roleName: string;
 
+  @ApiProperty({
+    description: 'Username or ID of the person performing the update',
+    example: 'johndoe',
+  })
   @IsString({ message: 'updated_by must be a string.' })
   @IsNotEmpty({ message: 'updated_by is required.' })
   updated_by: string;

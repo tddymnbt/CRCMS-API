@@ -11,6 +11,12 @@ export interface IUsersResponse {
     message: string;
   };
   data?: IUser[];
+  meta?: {
+    page: number;
+    totalNumber: number;
+    totalPages: number;
+    displayPage: number;
+  };
 }
 
 export interface IUser {
@@ -20,7 +26,6 @@ export interface IUser {
   last_name: string;
   email: string;
   is_active: boolean;
-  is_admin: boolean;
   created_at: Date;
   created_by: string;
   updated_at?: Date;
@@ -28,4 +33,29 @@ export interface IUser {
   deleted_at?: Date;
   deleted_by?: string;
   last_login?: string;
+  role?: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface IUserActionResponse {
+  status: {
+    success: boolean;
+    message: string;
+  };
+  data: {
+    create?: {
+      external_id: string;
+      name: string;
+    };
+    update?: {
+      external_id: string;
+      name: string;
+    };
+    delete?: {
+      external_id: string;
+      name: string;
+    };
+  };
 }

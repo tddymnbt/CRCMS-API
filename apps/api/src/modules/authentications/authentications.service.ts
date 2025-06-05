@@ -17,12 +17,14 @@ import { generateUniqueId } from 'src/common/utils/gen-nanoid';
 import { JwtPayload } from './interface/jwt-payload.interface';
 import { formatInTimeZone } from 'date-fns-tz';
 import { IValidateLoginResponse } from './interface/validate-login.interface';
+import { EmailService } from 'src/common/email/email.service';
 
 @Injectable()
 export class AuthenticationsService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private readonly emailService: EmailService,
 
     @InjectRepository(UserOTPLogs)
     private readonly otpRepo: Repository<UserOTPLogs>,
@@ -32,7 +34,7 @@ export class AuthenticationsService {
   ) {}
 
   async login(dto: LoginDto): Promise<ILoginResponse> {
-    await this.usersService.findOneByEmail(dto.email);
+    const user = await this.usersService.findOneByEmail(dto.email);
 
     const otp = generateOTP(6);
     const otpLog = this.otpRepo.create({
@@ -45,6 +47,17 @@ export class AuthenticationsService {
     await this.otpRepo.save(otpLog);
 
     // Send OTP via email logic here (skipped for brevity)
+    const templateData = {
+      OTP: otp,
+    };
+    const subject = `${user.data.first_name} ${user.data.last_name} - One-Time Password`;
+    const template = 'otp-template';
+    await this.emailService.sendEmail(
+      templateData,
+      template,
+      dto.email,
+      subject,
+    );
 
     return {
       status: { success: true, message: 'Email sent' },
@@ -52,7 +65,7 @@ export class AuthenticationsService {
   }
 
   async validateLogin(dto: ValidateLoginDto): Promise<IValidateLoginResponse> {
-    const user = await this.usersService.findOneByEmail(dto.email);
+    let user = await this.usersService.findOneByEmail(dto.email);
 
     const otpRecord = await this.otpRepo.findOne({
       where: {
@@ -90,6 +103,8 @@ export class AuthenticationsService {
     );
 
     delete user.data.id;
+    const lastLoginVal = await this.usersService.updateLastDateLogin(dto.email);
+    user.data.last_login = lastLoginVal;
 
     return {
       status: { success: true, message: 'Successfully validated' },

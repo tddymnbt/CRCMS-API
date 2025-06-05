@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Users"
+  },
+  {
+    "name": "Sales"
+  },
+  {
+    "name": "Inventory"
+  },
+  {
+    "name": "Clients"
+  },
+  {
+    "name": "Reports"
+  }
+]

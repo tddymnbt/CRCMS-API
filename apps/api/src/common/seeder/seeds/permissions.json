@@ -1,0 +1,110 @@
+[
+  {
+    "name": "users.create",
+    "description": "Create new user accounts"
+  },
+  {
+    "name": "users.read",
+    "description": "View user information"
+  },
+  {
+    "name": "users.update",
+    "description": "Update user details"
+  },
+  {
+    "name": "users.delete",
+    "description": "Delete user accounts"
+  },
+  {
+    "name": "users.assign_roles",
+    "description": "Assign roles to users"
+  },
+  {
+    "name": "users.reset_password",
+    "description": "Reset user passwords"
+  },
+  {
+    "name": "sales.create",
+    "description": "Create new sales records"
+  },
+  {
+    "name": "sales.read",
+    "description": "View sales data"
+  },
+  {
+    "name": "sales.update",
+    "description": "Update sales records"
+  },
+  {
+    "name": "sales.delete",
+    "description": "Delete sales records"
+  },
+  {
+    "name": "sales.process_refund",
+    "description": "Process sales refunds"
+  },
+  {
+    "name": "inventory.create_item",
+    "description": "Create inventory item"
+  },
+  {
+    "name": "inventory.read_item",
+    "description": "View inventory item"
+  },
+  {
+    "name": "inventory.update_item",
+    "description": "Update inventory item"
+  },
+  {
+    "name": "inventory.view_stock_levels",
+    "description": "Check inventory stock"
+  },
+  {
+    "name": "inventory.import_export",
+    "description": "Import/export inventory"
+  },
+  {
+    "name": "clients.create",
+    "description": "Add new client"
+  },
+  {
+    "name": "clients.read",
+    "description": "View client details"
+  },
+  {
+    "name": "clients.update",
+    "description": "Update client information"
+  },
+  {
+    "name": "clients.delete",
+    "description": "Remove client record"
+  },
+  {
+    "name": "clients.manage_contacts",
+    "description": "Manage client contacts"
+  },
+  {
+    "name": "reports.view_sales",
+    "description": "View sales reports"
+  },
+  {
+    "name": "reports.view_inventory",
+    "description": "View inventory reports"
+  },
+  {
+    "name": "reports.view_clients",
+    "description": "View client reports"
+  },
+  {
+    "name": "reports.generate",
+    "description": "Generate new reports"
+  },
+  {
+    "name": "reports.schedule",
+    "description": "Schedule report generation"
+  },
+  {
+    "name": "reports.export",
+    "description": "Export reports to file"
+  }
+]
