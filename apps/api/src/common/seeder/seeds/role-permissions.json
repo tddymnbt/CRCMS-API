@@ -1,0 +1,50 @@
+[
+  {
+    "role": "Admin",
+    "permissions": [
+      "users.create",
+      "users.read",
+      "users.update",
+      "users.delete",
+      "users.assign_roles",
+      "users.reset_password",
+      "sales.create",
+      "sales.read",
+      "sales.update",
+      "sales.delete",
+      "sales.process_refund",
+      "inventory.create_item",
+      "inventory.read_item",
+      "inventory.update_item",
+      "inventory.view_stock_levels",
+      "inventory.import_export",
+      "clients.create",
+      "clients.read",
+      "clients.update",
+      "clients.delete",
+      "clients.manage_contacts",
+      "reports.view_sales",
+      "reports.view_inventory",
+      "reports.view_clients",
+      "reports.generate",
+      "reports.schedule",
+      "reports.export"
+    ]
+  },
+  {
+    "role": "Staff",
+    "permissions": [
+      "users.read",
+      "users.reset_password",
+      "sales.create",
+      "sales.read",
+      "sales.process_refund",
+      "inventory.read_item",
+      "inventory.view_stock_levels",
+      "inventory.import_export",
+      "clients.read",
+      "reports.view_sales",
+      "reports.view_inventory"
+    ]
+  }
+]
