@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SalesDto } from './dtos/create-sales.dto';
 import {
+  ICustomerFrequencyResponse,
   ISaleResponse,
   ISalesResponse,
   ISaleTransactionsResponse,
@@ -12,6 +13,7 @@ import { RecordPaymentDto } from './dtos/record-payment.dto';
 import { CancelSaleDto } from './dtos/cancel-sale.dto';
 import { ExtendLayawayDueDateDto } from './dtos/extend-due-date.dto';
 import { GetAllSalesTransactionsStats } from './dtos/get-sales-trans-stats.dto';
+import { CustomerPurchaseFrequencyDto } from './dtos/customer-purchase-frequency.dto';
 
 @ApiTags('sales')
 @Controller('sales')
@@ -116,5 +118,20 @@ export class SalesController {
     @Query() query: GetAllSalesTransactionsStats,
   ): Promise<ISaleTransactionsResponse> {
     return this.service.getSalesStats(query.mode, query.dateFrom, query.dateTo);
+  }
+
+  @Get('transaction/frequencies')
+  @ApiOperation({ summary: 'Get customer purchase frequencies' })
+  async getCustomerFrequency(
+    @Query() dto: CustomerPurchaseFrequencyDto,
+  ): Promise<ICustomerFrequencyResponse> {
+    const data = await this.service.getCustomerPurchaseFrequency(dto);
+    return {
+      status: {
+        success: true,
+        message: 'Customer Purchase Frequency retrieved',
+      },
+      data,
+    };
   }
 }
