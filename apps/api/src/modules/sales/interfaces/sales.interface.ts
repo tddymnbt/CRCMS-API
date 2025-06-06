@@ -110,3 +110,47 @@ export interface ISaleTransactionDetails {
   lastYearAmount?: string;
   lastYearCount?: string;
 }
+
+export interface ICustomerFrequencyResponse {
+  status?: {
+    success: boolean;
+    message: string;
+  };
+  data?: {
+    dataRange?: {
+      from: string;
+      to: string;
+    };
+    customRange?: CustomerFrequencyResult;
+    thisMonth?: CustomerFrequencyResult;
+    lastMonth?: CustomerFrequencyResult;
+    last6mos?: CustomerFrequencyResult;
+    lastYear?: CustomerFrequencyResult;
+  };
+}
+
+export interface CustomerFrequencyResponse {
+  status?: {
+    success: boolean;
+    message: string;
+  };
+  dataRange?: {
+    from: string;
+    to: string;
+  };
+  customRange?: CustomerFrequencyResult;
+  thisMonth?: CustomerFrequencyResult;
+  lastMonth?: CustomerFrequencyResult;
+  last6mos?: CustomerFrequencyResult;
+  lastYear?: CustomerFrequencyResult;
+}
+
+export interface CustomerFrequencyResult {
+  newCustomers: number;
+  repeatCustomers: number;
+  topRepeatCustomers: {
+    customerId: string;
+    customerName: string;
+    orders: number;
+  }[];
+}

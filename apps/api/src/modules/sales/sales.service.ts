@@ -16,6 +16,8 @@ import { IProduct } from '../products/interfaces/product.interface';
 import { IClient } from '../clients/interface/client-response.interface';
 import { Not, Repository } from 'typeorm';
 import {
+  CustomerFrequencyResponse,
+  CustomerFrequencyResult,
   IProductUnit,
   ISaleResponse,
   ISalesResponse,
@@ -27,6 +29,7 @@ import { UsersService } from '../users/users.service';
 import { RecordPaymentDto } from './dtos/record-payment.dto';
 import { CancelSaleDto } from './dtos/cancel-sale.dto';
 import { ExtendLayawayDueDateDto } from './dtos/extend-due-date.dto';
+import { CustomerPurchaseFrequencyDto } from './dtos/customer-purchase-frequency.dto';
 
 @Injectable()
 export class SalesService {
@@ -1194,5 +1197,188 @@ export class SalesService {
       },
       data: data as ISaleTransactionsResponse['data'],
     };
+  }
+
+  async getCustomerPurchaseFrequencyV1(
+    dto: CustomerPurchaseFrequencyDto,
+  ): Promise<CustomerFrequencyResponse> {
+    const { dateFrom, dateTo } = dto;
+
+    const buildMetrics = async (
+      from: Date,
+      to: Date,
+    ): Promise<CustomerFrequencyResult> => {
+      const allSales = await this.salesRepo
+        .createQueryBuilder('sales')
+        .select(['sales.client_ext_id'])
+        .addSelect('COUNT(*)', 'orders')
+        .where('sales.status = :status', { status: 'Fully paid' })
+        .andWhere('sales.date_purchased BETWEEN :from AND :to', { from, to })
+        .groupBy('sales.client_ext_id')
+        .getRawMany();
+
+      const newCustomers = allSales.filter((s) => +s.orders === 1).length;
+      const repeatCustomers = allSales.filter((s) => +s.orders > 1).length;
+      const topRepeatCustomers = allSales
+        .filter((s) => +s.orders > 1)
+        .sort((a, b) => +b.orders - +a.orders)
+        .slice(0, 5)
+        .map((s) => ({
+          customerId: s.sales_client_ext_id,
+          customerName: `${s.sales_client_ext_id}`,
+          orders: +s.orders,
+        }));
+
+      return { newCustomers, repeatCustomers, topRepeatCustomers };
+    };
+
+    const result: CustomerFrequencyResponse = {};
+
+    if (dateFrom && dateTo) {
+      const from = new Date(dateFrom);
+      const to = new Date(dateTo);
+      result.dataRange = { from: dateFrom, to: dateTo };
+      result.customRange = await buildMetrics(from, to);
+    } else {
+      const now = new Date();
+
+      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+      const startOf = (unit: 'month' | 'year', offset = 0) => {
+        const d = new Date();
+        if (unit === 'month') {
+          d.setMonth(d.getMonth() + offset, 1);
+        } else {
+          d.setFullYear(d.getFullYear() + offset, 0, 1);
+        }
+        d.setHours(0, 0, 0, 0);
+        return d;
+      };
+
+      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+      const endOf = (unit: 'month' | 'year', offset = 0) => {
+        const d = new Date();
+        if (unit === 'month') {
+          d.setMonth(d.getMonth() + offset + 1, 0);
+        } else {
+          d.setFullYear(d.getFullYear() + offset + 1, 0, 0);
+        }
+        d.setHours(23, 59, 59, 999);
+        return d;
+      };
+
+      result.thisMonth = await buildMetrics(startOf('month'), endOf('month'));
+      result.lastMonth = await buildMetrics(
+        startOf('month', -1),
+        endOf('month', -1),
+      );
+
+      const last6MonthsStart = new Date(now);
+      last6MonthsStart.setMonth(now.getMonth() - 6);
+      result.last6mos = await buildMetrics(last6MonthsStart, now);
+
+      result.lastYear = await buildMetrics(
+        startOf('year', -1),
+        endOf('year', -1),
+      );
+    }
+
+    return result;
+  }
+
+  async getCustomerPurchaseFrequency(
+    dto: CustomerPurchaseFrequencyDto,
+  ): Promise<CustomerFrequencyResponse> {
+    const { dateFrom, dateTo } = dto;
+
+    const buildMetrics = async (
+      from: Date,
+      to: Date,
+    ): Promise<CustomerFrequencyResult> => {
+      const allSales = await this.salesRepo
+        .createQueryBuilder('sales')
+        .select('sales.client_ext_id', 'clientId')
+        .addSelect('COUNT(*)', 'orders')
+        .addSelect(
+          `CONCAT(client.first_name, ' ', client.last_name)`,
+          'customerName',
+        )
+        .leftJoin(
+          'clients',
+          'client',
+          'client.external_id = sales.client_ext_id',
+        )
+        .where('sales.status = :status', { status: 'Fully paid' })
+        .andWhere('sales.date_purchased BETWEEN :from AND :to', { from, to })
+        .groupBy('sales.client_ext_id')
+        .addGroupBy('client.first_name')
+        .addGroupBy('client.last_name')
+        .getRawMany();
+
+      const newCustomers = allSales.filter((s) => +s.orders === 1).length;
+      const repeatCustomers = allSales.filter((s) => +s.orders > 1).length;
+      const topRepeatCustomers = allSales
+        .filter((s) => +s.orders > 1)
+        .sort((a, b) => +b.orders - +a.orders)
+        .slice(0, 5)
+        .map((s) => ({
+          customerId: s.clientId,
+          customerName: s.customerName ?? s.clientId,
+          orders: +s.orders,
+        }));
+
+      return { newCustomers, repeatCustomers, topRepeatCustomers };
+    };
+
+    const result: CustomerFrequencyResponse = {};
+
+    if (dateFrom && dateTo) {
+      const from = new Date(dateFrom);
+      const to = new Date(dateTo);
+      result.dataRange = { from: dateFrom, to: dateTo };
+      result.customRange = await buildMetrics(from, to);
+    } else {
+      const now = new Date();
+
+      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+      const startOf = (unit: 'month' | 'year', offset = 0) => {
+        const d = new Date();
+        if (unit === 'month') {
+          d.setMonth(d.getMonth() + offset, 1);
+        } else {
+          d.setFullYear(d.getFullYear() + offset, 0, 1);
+        }
+        d.setHours(0, 0, 0, 0);
+        return d;
+      };
+
+      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+      const endOf = (unit: 'month' | 'year', offset = 0) => {
+        const d = new Date();
+        if (unit === 'month') {
+          d.setMonth(d.getMonth() + offset + 1, 0);
+        } else {
+          d.setFullYear(d.getFullYear() + offset + 1, 0, 0);
+        }
+        d.setHours(23, 59, 59, 999);
+        return d;
+      };
+
+      result.thisMonth = await buildMetrics(startOf('month'), endOf('month'));
+      result.lastMonth = await buildMetrics(
+        startOf('month', -1),
+        endOf('month', -1),
+      );
+
+      const last6MonthsStart = new Date(now);
+      last6MonthsStart.setMonth(now.getMonth() - 6);
+      result.last6mos = await buildMetrics(last6MonthsStart, now);
+
+      result.lastYear = await buildMetrics(
+        startOf('year', -1),
+        endOf('year', -1),
+      );
+    }
+
+    return result;
   }
 }
