@@ -60,6 +60,8 @@ export interface ISale {
 export interface IProductUnit {
   external_id: string;
   name: string;
+  code: string;
+  inclusions: string[];
   is_consigned: boolean;
   unit_price: string;
   qty: number;
@@ -107,4 +109,48 @@ export interface ISaleTransactionDetails {
   lastMonthCount?: string;
   lastYearAmount?: string;
   lastYearCount?: string;
+}
+
+export interface ICustomerFrequencyResponse {
+  status?: {
+    success: boolean;
+    message: string;
+  };
+  data?: {
+    dataRange?: {
+      from: string;
+      to: string;
+    };
+    customRange?: CustomerFrequencyResult;
+    thisMonth?: CustomerFrequencyResult;
+    lastMonth?: CustomerFrequencyResult;
+    last6mos?: CustomerFrequencyResult;
+    lastYear?: CustomerFrequencyResult;
+  };
+}
+
+export interface CustomerFrequencyResponse {
+  status?: {
+    success: boolean;
+    message: string;
+  };
+  dataRange?: {
+    from: string;
+    to: string;
+  };
+  customRange?: CustomerFrequencyResult;
+  thisMonth?: CustomerFrequencyResult;
+  lastMonth?: CustomerFrequencyResult;
+  last6mos?: CustomerFrequencyResult;
+  lastYear?: CustomerFrequencyResult;
+}
+
+export interface CustomerFrequencyResult {
+  newCustomers: number;
+  repeatCustomers: number;
+  topRepeatCustomers: {
+    customerId: string;
+    customerName: string;
+    orders: number;
+  }[];
 }

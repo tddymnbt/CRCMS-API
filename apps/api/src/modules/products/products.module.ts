@@ -18,6 +18,7 @@ import { ClientsModule } from '../clients/clients.module';
 import { StockMovementService } from './services/stock-movement.service';
 import { StockMovement } from './entities/stock-movement.entity';
 import { UsersModule } from '../users/users.module';
+import { SharedModule } from 'src/common/shared/shared.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { UsersModule } from '../users/users.module';
     ]),
     ClientsModule,
     UsersModule,
+    SharedModule,
   ],
   controllers: [
     ProductsController,

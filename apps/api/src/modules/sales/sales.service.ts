@@ -16,6 +16,8 @@ import { IProduct } from '../products/interfaces/product.interface';
 import { IClient } from '../clients/interface/client-response.interface';
 import { Not, Repository } from 'typeorm';
 import {
+  CustomerFrequencyResponse,
+  CustomerFrequencyResult,
   IProductUnit,
   ISaleResponse,
   ISalesResponse,
@@ -27,6 +29,7 @@ import { UsersService } from '../users/users.service';
 import { RecordPaymentDto } from './dtos/record-payment.dto';
 import { CancelSaleDto } from './dtos/cancel-sale.dto';
 import { ExtendLayawayDueDateDto } from './dtos/extend-due-date.dto';
+import { CustomerPurchaseFrequencyDto } from './dtos/customer-purchase-frequency.dto';
 
 @Injectable()
 export class SalesService {
@@ -94,6 +97,7 @@ export class SalesService {
             s.external_id ILIKE :search 
             OR s.created_by ILIKE :search
             OR p.name ILIKE :search
+            OR p.code ILIKE :search
             OR CONCAT(c.first_name, ' ', c.last_name) ILIKE :search
         )`,
         { search: `%${searchValue}%` },
@@ -778,67 +782,6 @@ export class SalesService {
     return await this.findOne(salesLayawayDetails.sale_ext_id.trim());
   }
 
-  async validateProducts_old(
-    products: { product_ext_id: string; qty?: number }[],
-  ): Promise<IProduct[]> {
-    const seen = new Set<string>();
-    const duplicates: string[] = [];
-    const insufficientStock: string[] = [];
-    const notFoundProducts: string[] = [];
-    const validatedProducts: IProduct[] = [];
-
-    for (const item of products) {
-      const trimmedId = item.product_ext_id.trim();
-
-      // Check duplicate
-      if (seen.has(trimmedId)) {
-        duplicates.push(trimmedId);
-        continue;
-      }
-      seen.add(trimmedId);
-
-      // Fetch product
-      const productData = await this.productService
-        .findOne(trimmedId)
-        .then((res) => res?.data ?? null);
-
-      if (!productData) {
-        notFoundProducts.push(trimmedId);
-        continue;
-      }
-
-      // Check quantity
-      if (item.qty > productData.stock.qty_in_stock) {
-        insufficientStock.push(
-          `${trimmedId} (requested: ${item.qty}, available: ${productData.stock.qty_in_stock})`,
-        );
-      }
-
-      validatedProducts.push(productData);
-    }
-
-    // Throw errors if any
-    if (duplicates.length > 0) {
-      throw new BadRequestException(
-        `Duplicate product_ext_id(s) found: ${duplicates.join(', ')}`,
-      );
-    }
-
-    if (notFoundProducts.length > 0) {
-      throw new NotFoundException(
-        `Product(s) not found: ${notFoundProducts.join(', ')}`,
-      );
-    }
-
-    if (insufficientStock.length > 0) {
-      throw new BadRequestException(
-        `Insufficient stock for product(s): ${insufficientStock.join(', ')}`,
-      );
-    }
-
-    return validatedProducts;
-  }
-
   async validateProducts(
     products: { product_ext_id: string; qty?: number }[],
     mode: 'create' | 'read' = 'create',
@@ -946,6 +889,8 @@ export class SalesService {
       return {
         external_id: item.product_ext_id,
         name: product?.name ?? '',
+        code: product?.code ?? '',
+        inclusions: product?.inclusions ?? [],
         is_consigned: product?.is_consigned ?? false,
         unit_price: Number(item.unit_price).toFixed(2),
         qty: item.qty,
@@ -1252,5 +1197,188 @@ export class SalesService {
       },
       data: data as ISaleTransactionsResponse['data'],
     };
+  }
+
+  async getCustomerPurchaseFrequencyV1(
+    dto: CustomerPurchaseFrequencyDto,
+  ): Promise<CustomerFrequencyResponse> {
+    const { dateFrom, dateTo } = dto;
+
+    const buildMetrics = async (
+      from: Date,
+      to: Date,
+    ): Promise<CustomerFrequencyResult> => {
+      const allSales = await this.salesRepo
+        .createQueryBuilder('sales')
+        .select(['sales.client_ext_id'])
+        .addSelect('COUNT(*)', 'orders')
+        .where('sales.status = :status', { status: 'Fully paid' })
+        .andWhere('sales.date_purchased BETWEEN :from AND :to', { from, to })
+        .groupBy('sales.client_ext_id')
+        .getRawMany();
+
+      const newCustomers = allSales.filter((s) => +s.orders === 1).length;
+      const repeatCustomers = allSales.filter((s) => +s.orders > 1).length;
+      const topRepeatCustomers = allSales
+        .filter((s) => +s.orders > 1)
+        .sort((a, b) => +b.orders - +a.orders)
+        .slice(0, 5)
+        .map((s) => ({
+          customerId: s.sales_client_ext_id,
+          customerName: `${s.sales_client_ext_id}`,
+          orders: +s.orders,
+        }));
+
+      return { newCustomers, repeatCustomers, topRepeatCustomers };
+    };
+
+    const result: CustomerFrequencyResponse = {};
+
+    if (dateFrom && dateTo) {
+      const from = new Date(dateFrom);
+      const to = new Date(dateTo);
+      result.dataRange = { from: dateFrom, to: dateTo };
+      result.customRange = await buildMetrics(from, to);
+    } else {
+      const now = new Date();
+
+      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+      const startOf = (unit: 'month' | 'year', offset = 0) => {
+        const d = new Date();
+        if (unit === 'month') {
+          d.setMonth(d.getMonth() + offset, 1);
+        } else {
+          d.setFullYear(d.getFullYear() + offset, 0, 1);
+        }
+        d.setHours(0, 0, 0, 0);
+        return d;
+      };
+
+      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+      const endOf = (unit: 'month' | 'year', offset = 0) => {
+        const d = new Date();
+        if (unit === 'month') {
+          d.setMonth(d.getMonth() + offset + 1, 0);
+        } else {
+          d.setFullYear(d.getFullYear() + offset + 1, 0, 0);
+        }
+        d.setHours(23, 59, 59, 999);
+        return d;
+      };
+
+      result.thisMonth = await buildMetrics(startOf('month'), endOf('month'));
+      result.lastMonth = await buildMetrics(
+        startOf('month', -1),
+        endOf('month', -1),
+      );
+
+      const last6MonthsStart = new Date(now);
+      last6MonthsStart.setMonth(now.getMonth() - 6);
+      result.last6mos = await buildMetrics(last6MonthsStart, now);
+
+      result.lastYear = await buildMetrics(
+        startOf('year', -1),
+        endOf('year', -1),
+      );
+    }
+
+    return result;
+  }
+
+  async getCustomerPurchaseFrequency(
+    dto: CustomerPurchaseFrequencyDto,
+  ): Promise<CustomerFrequencyResponse> {
+    const { dateFrom, dateTo } = dto;
+
+    const buildMetrics = async (
+      from: Date,
+      to: Date,
+    ): Promise<CustomerFrequencyResult> => {
+      const allSales = await this.salesRepo
+        .createQueryBuilder('sales')
+        .select('sales.client_ext_id', 'clientId')
+        .addSelect('COUNT(*)', 'orders')
+        .addSelect(
+          `CONCAT(client.first_name, ' ', client.last_name)`,
+          'customerName',
+        )
+        .leftJoin(
+          'clients',
+          'client',
+          'client.external_id = sales.client_ext_id',
+        )
+        .where('sales.status = :status', { status: 'Fully paid' })
+        .andWhere('sales.date_purchased BETWEEN :from AND :to', { from, to })
+        .groupBy('sales.client_ext_id')
+        .addGroupBy('client.first_name')
+        .addGroupBy('client.last_name')
+        .getRawMany();
+
+      const newCustomers = allSales.filter((s) => +s.orders === 1).length;
+      const repeatCustomers = allSales.filter((s) => +s.orders > 1).length;
+      const topRepeatCustomers = allSales
+        .filter((s) => +s.orders > 1)
+        .sort((a, b) => +b.orders - +a.orders)
+        .slice(0, 5)
+        .map((s) => ({
+          customerId: s.clientId,
+          customerName: s.customerName ?? s.clientId,
+          orders: +s.orders,
+        }));
+
+      return { newCustomers, repeatCustomers, topRepeatCustomers };
+    };
+
+    const result: CustomerFrequencyResponse = {};
+
+    if (dateFrom && dateTo) {
+      const from = new Date(dateFrom);
+      const to = new Date(dateTo);
+      result.dataRange = { from: dateFrom, to: dateTo };
+      result.customRange = await buildMetrics(from, to);
+    } else {
+      const now = new Date();
+
+      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+      const startOf = (unit: 'month' | 'year', offset = 0) => {
+        const d = new Date();
+        if (unit === 'month') {
+          d.setMonth(d.getMonth() + offset, 1);
+        } else {
+          d.setFullYear(d.getFullYear() + offset, 0, 1);
+        }
+        d.setHours(0, 0, 0, 0);
+        return d;
+      };
+
+      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+      const endOf = (unit: 'month' | 'year', offset = 0) => {
+        const d = new Date();
+        if (unit === 'month') {
+          d.setMonth(d.getMonth() + offset + 1, 0);
+        } else {
+          d.setFullYear(d.getFullYear() + offset + 1, 0, 0);
+        }
+        d.setHours(23, 59, 59, 999);
+        return d;
+      };
+
+      result.thisMonth = await buildMetrics(startOf('month'), endOf('month'));
+      result.lastMonth = await buildMetrics(
+        startOf('month', -1),
+        endOf('month', -1),
+      );
+
+      const last6MonthsStart = new Date(now);
+      last6MonthsStart.setMonth(now.getMonth() - 6);
+      result.last6mos = await buildMetrics(last6MonthsStart, now);
+
+      result.lastYear = await buildMetrics(
+        startOf('year', -1),
+        endOf('year', -1),
+      );
+    }
+
+    return result;
   }
 }

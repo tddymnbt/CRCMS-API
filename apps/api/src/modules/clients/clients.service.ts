@@ -28,6 +28,7 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { BirthMonthParamDto } from './dto/get-celebrant.dto';
 import { UsersService } from '../users/users.service';
 import * as moment from 'moment';
+import { SharedService } from 'src/common/shared/shared.service';
 
 @Injectable()
 export class ClientsService {
@@ -39,6 +40,7 @@ export class ClientsService {
     private clientBankRepo: Repository<ClientBankDetail>,
 
     private readonly userService: UsersService,
+    private readonly sharedService: SharedService,
   ) {}
 
   async findAll(dto: FindClientsDto): Promise<IClientsResponse> {
@@ -409,6 +411,18 @@ export class ClientsService {
 
     if (!client) {
       throw new NotFoundException('Client not found');
+    }
+
+    const hasSales = await this.sharedService.checkTransactionByClientOrStock(
+      client.external_id,
+    );
+    if (hasSales) {
+      throw new BadRequestException({
+        status: {
+          success: false,
+          message: 'Cannot delete: existing transactions found.',
+        },
+      });
     }
 
     client.is_active = false;
