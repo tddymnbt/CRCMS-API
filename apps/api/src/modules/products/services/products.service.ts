@@ -41,6 +41,7 @@ import {
 import { UpdateProductDto } from '../dtos/update-product.dto';
 import { UsersService } from 'src/modules/users/users.service';
 import * as moment from 'moment';
+import { SharedService } from 'src/common/shared/shared.service';
 
 @Injectable()
 export class ProductsService {
@@ -51,6 +52,7 @@ export class ProductsService {
     private readonly clientService: ClientsService,
     private readonly stockMovementService: StockMovementService,
     private readonly userService: UsersService,
+    private readonly sharedService: SharedService,
 
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
@@ -552,6 +554,18 @@ export class ProductsService {
         status: {
           success: false,
           message: 'Product not found',
+        },
+      });
+    }
+
+    const hasSales = await this.sharedService.checkTransactionByClientOrStock(
+      stock.external_id,
+    );
+    if (hasSales) {
+      throw new BadRequestException({
+        status: {
+          success: false,
+          message: 'Cannot delete: existing transactions found.',
         },
       });
     }
