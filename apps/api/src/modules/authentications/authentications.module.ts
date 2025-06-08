@@ -10,6 +10,7 @@ import { UserAuthentications } from './entity/user-auth.entity';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { EmailService } from 'src/common/email/email.service';
+import { ActivityLogsModule } from '../activity_logs/activity_logs.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { EmailService } from 'src/common/email/email.service';
       }),
     }),
     UsersModule,
+    ActivityLogsModule,
   ],
   controllers: [AuthController],
   providers: [AuthenticationsService, JwtStrategy, EmailService],

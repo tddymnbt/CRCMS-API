@@ -9,6 +9,7 @@ import { SalesItems } from './entities/sale-items.entity';
 import { PaymentLogs } from './entities/payment-logs.entity';
 import { SaleLayaways } from './entities/sale-layaways.entity';
 import { UsersModule } from '../users/users.module';
+import { ActivityLogsModule } from '../activity_logs/activity_logs.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UsersModule } from '../users/users.module';
     ClientsModule,
     ProductsModule,
     UsersModule,
+    ActivityLogsModule,
   ],
   controllers: [SalesController],
   providers: [SalesService],

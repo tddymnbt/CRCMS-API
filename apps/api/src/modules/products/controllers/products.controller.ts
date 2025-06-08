@@ -26,6 +26,7 @@ import { DeleteProductDto } from '../dtos/delete-product.dto';
 import { StockMovementService } from '../services/stock-movement.service';
 import { FindProductTransactionsDto } from '../dtos/find-p-trans.dto';
 import { IProductTransactionsResponse } from '../interfaces/p-trans.interface';
+import { ActivityLogsService } from 'src/modules/activity_logs/activity_logs.service';
 
 @ApiTags('products')
 @Controller('products')
@@ -33,6 +34,7 @@ export class ProductsController {
   constructor(
     private readonly service: ProductsService,
     private readonly stockMovementService: StockMovementService,
+    private loggerService: ActivityLogsService,
   ) {}
 
   @Get()
@@ -49,7 +51,19 @@ export class ProductsController {
   @Post()
   @ApiOperation({ summary: 'Create product' })
   async create(@Body() dto: CreateProductDto): Promise<IProductResponse> {
-    return this.service.createProduct(dto);
+    const response = await this.service.createProduct(dto);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.created_by,
+        'Product',
+        'create',
+        `Created product ${response.data.name}`,
+        response.data.stock_external_id,
+      );
+    }
+
+    return response;
   }
 
   @Put('update-stock/id/:id')
@@ -58,7 +72,19 @@ export class ProductsController {
     @Param('id') id: string,
     @Body() dto: UpdateProductStockDto,
   ): Promise<IProductResponse> {
-    return this.service.updateProductStock(id, dto);
+    const response = await this.service.updateProductStock(id, dto);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.updated_by,
+        'Product',
+        'update',
+        `Updated product stock ${response.data.name}`,
+        id,
+      );
+    }
+
+    return response;
   }
 
   @Delete('id/:id')
@@ -67,7 +93,18 @@ export class ProductsController {
     @Param('id') id: string,
     @Body() dto: DeleteProductDto,
   ): Promise<IProductResponse> {
-    return this.service.remove(id, dto.deleted_by);
+    const response = await this.service.remove(id, dto.deleted_by);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.deleted_by,
+        'Product',
+        'delete',
+        `Deleted product ${response.data.name}`,
+        id,
+      );
+    }
+    return response;
   }
 
   @Put('id/:id')
@@ -76,7 +113,19 @@ export class ProductsController {
     @Param('id') id: string,
     @Body() dto: UpdateProductDto,
   ): Promise<IProductResponse> {
-    return this.service.update(id, dto);
+    const response = await this.service.update(id, dto);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.updated_by,
+        'Product',
+        'update',
+        `Updated product ${response.data.name}`,
+        id,
+      );
+    }
+
+    return response;
   }
 
   @Post('id/:id/transactions')

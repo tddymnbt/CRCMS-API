@@ -445,6 +445,7 @@ export class ClientsService {
 
     return {
       status: { success: true, message: 'Client successfully deleted.' },
+      data: client,
     };
   }
 

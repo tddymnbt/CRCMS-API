@@ -12,6 +12,7 @@ import { RbacModule } from './modules/rbac/rbac.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { ProductsModule } from './modules/products/products.module';
 import { SalesModule } from './modules/sales/sales.module';
+import { ActivityLogsModule } from './modules/activity_logs/activity_logs.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { SalesModule } from './modules/sales/sales.module';
     ClientsModule,
     ProductsModule,
     SalesModule,
+    ActivityLogsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

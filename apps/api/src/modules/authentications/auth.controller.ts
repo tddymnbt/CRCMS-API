@@ -6,11 +6,15 @@ import { ILoginResponse } from './interface/login.interface';
 import { ValidateLoginDto } from './dto/validate-login.dto';
 import { IValidateLoginResponse } from './interface/validate-login.interface';
 import { JwtAuthGuard } from 'src/common/guard/jwt-auth.guard';
+import { ActivityLogsService } from '../activity_logs/activity_logs.service';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthenticationsService) {}
+  constructor(
+    private authService: AuthenticationsService,
+    private loggerService: ActivityLogsService,
+  ) {}
 
   @Post('login')
   @ApiOperation({ summary: 'Login' })
@@ -25,6 +29,16 @@ export class AuthController {
     @Body() dto: ValidateLoginDto,
   ): Promise<IValidateLoginResponse> {
     const response = await this.authService.validateLogin(dto);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        response.data.external_id,
+        'Authentication',
+        'login',
+        `Login`,
+      );
+    }
+
     return response;
   }
 
