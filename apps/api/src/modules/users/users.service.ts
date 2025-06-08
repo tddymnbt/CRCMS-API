@@ -305,6 +305,7 @@ export class UsersService {
 
     return {
       status: { success: true, message: 'User successfully deleted.' },
+      data: user.data,
     };
   }
 
@@ -360,6 +361,7 @@ export class UsersService {
     update_ext_id?: string,
     delete_ext_id?: string,
   ): Promise<IUserActionResponse> {
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const getUser = (externalId?: string) => {
       if (!externalId?.trim()) return Promise.resolve(null);
       return this.usersRepo

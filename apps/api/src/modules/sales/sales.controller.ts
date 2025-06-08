@@ -14,11 +14,15 @@ import { CancelSaleDto } from './dtos/cancel-sale.dto';
 import { ExtendLayawayDueDateDto } from './dtos/extend-due-date.dto';
 import { GetAllSalesTransactionsStats } from './dtos/get-sales-trans-stats.dto';
 import { CustomerPurchaseFrequencyDto } from './dtos/customer-purchase-frequency.dto';
+import { ActivityLogsService } from '../activity_logs/activity_logs.service';
 
 @ApiTags('sales')
 @Controller('sales')
 export class SalesController {
-  constructor(private readonly service: SalesService) {}
+  constructor(
+    private readonly service: SalesService,
+    private loggerService: ActivityLogsService,
+  ) {}
 
   //#region GET API
 
@@ -88,19 +92,55 @@ export class SalesController {
   @Post()
   @ApiOperation({ summary: 'Create sales transaction' })
   async create(@Body() dto: SalesDto): Promise<ISaleResponse> {
-    return this.service.createSale(dto);
+    const response = await this.service.createSale(dto);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.created_by,
+        'Sales',
+        'create',
+        `Created sale transaction ${response.data.sale_external_id}`,
+        response.data.sale_external_id,
+      );
+    }
+
+    return response;
   }
 
   @Post('payment')
   @ApiOperation({ summary: 'Record payment' })
   async recordPayment(@Body() dto: RecordPaymentDto): Promise<ISaleResponse> {
-    return this.service.recordPayment(dto);
+    const response = await this.service.recordPayment(dto);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.created_by,
+        'Sales',
+        'update',
+        `Updated sale transaction - recorded a payment ${response.data.sale_external_id}`,
+        response.data.sale_external_id,
+      );
+    }
+
+    return response;
   }
 
   @Post('cancel')
   @ApiOperation({ summary: 'Cancel sale transaction' })
   async cancelSale(@Body() dto: CancelSaleDto): Promise<ISaleResponse> {
-    return this.service.cancelSales(dto);
+    const response = await this.service.cancelSales(dto);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.cancelled_by,
+        'Sales',
+        'update',
+        `Updated sale transaction - cancelled a transaction ${dto.sale_ext_id}`,
+        dto.sale_ext_id,
+      );
+    }
+
+    return response;
   }
 
   @Put('layaway/extend-due-date/:id')
@@ -109,7 +149,19 @@ export class SalesController {
     @Param('id') id: string,
     @Body() dto: ExtendLayawayDueDateDto,
   ): Promise<ISaleResponse> {
-    return this.service.extendLayawayDueDate(id, dto);
+    const response = await this.service.extendLayawayDueDate(id, dto);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.updated_by,
+        'Sales',
+        'update',
+        `Updated sale transaction - extended layaway due date ${id}`,
+        id,
+      );
+    }
+
+    return response;
   }
 
   @Get('transaction/stats')

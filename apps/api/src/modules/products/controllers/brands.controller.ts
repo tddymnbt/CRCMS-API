@@ -16,11 +16,15 @@ import { CreateProductMiscDto } from '../dtos/create-p-misc.dto';
 import { UpdateProductMiscDto } from '../dtos/update-p-misc.dto';
 import { DeleteProductMiscDto } from '../dtos/delete-p-misc.dto';
 import { BrandsService } from '../services/brands.service';
+import { ActivityLogsService } from 'src/modules/activity_logs/activity_logs.service';
 
 @ApiTags('product brands')
 @Controller('products/brands')
 export class BrandsController {
-  constructor(private readonly service: BrandsService) {}
+  constructor(
+    private readonly service: BrandsService,
+    private loggerService: ActivityLogsService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Find all product brands' })
@@ -39,7 +43,18 @@ export class BrandsController {
   async create(
     @Body() dto: CreateProductMiscDto,
   ): Promise<IProductMiscResponse> {
-    return this.service.create(dto);
+    const response = await this.service.create(dto);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.created_by,
+        'Product',
+        'create',
+        `Created product brand ${response.data.name}`,
+        response.data.external_id,
+      );
+    }
+    return response;
   }
 
   @Put('id/:id')
@@ -48,7 +63,19 @@ export class BrandsController {
     @Param('id') id: string,
     @Body() dto: UpdateProductMiscDto,
   ): Promise<IProductMiscResponse> {
-    return this.service.update(id, dto);
+    const response = await this.service.update(id, dto);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.updated_by,
+        'Product',
+        'update',
+        `Updated product brand ${id}`,
+        id,
+      );
+    }
+
+    return response;
   }
 
   @Delete('id/:id')
@@ -57,6 +84,18 @@ export class BrandsController {
     @Param('id') id: string,
     @Body() dto: DeleteProductMiscDto,
   ): Promise<IProductMiscResponse> {
-    return this.service.remove(id, dto.deleted_by);
+    const response = await this.service.remove(id, dto.deleted_by);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.deleted_by,
+        'Product',
+        'update',
+        `Updated product brand ${id}`,
+        id,
+      );
+    }
+
+    return response;
   }
 }

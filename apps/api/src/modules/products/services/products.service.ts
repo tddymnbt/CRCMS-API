@@ -378,12 +378,22 @@ export class ProductsService {
       createdBy: updated_by,
     });
 
+    const response = await this.findOne(ext_id);
+
     return {
       status: {
         success: true,
         message: 'Stock updated successfully',
       },
+      ...response,
     };
+
+    // return {
+    //   status: {
+    //     success: true,
+    //     message: 'Stock updated successfully',
+    //   },
+    // };
   }
 
   async update(
@@ -589,6 +599,13 @@ export class ProductsService {
       await this.conditionRepo.save(productCondition);
       await this.conditionRepo.softDelete(productCondition.id);
     }
+
+    const response = await this.findOne(ext_id);
+
+    return {
+      status: { success: true, message: 'Product successfully deleted.' },
+      ...response,
+    };
 
     return {
       status: { success: true, message: 'Product successfully deleted.' },

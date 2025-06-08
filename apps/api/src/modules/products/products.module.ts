@@ -19,6 +19,7 @@ import { StockMovementService } from './services/stock-movement.service';
 import { StockMovement } from './entities/stock-movement.entity';
 import { UsersModule } from '../users/users.module';
 import { SharedModule } from 'src/common/shared/shared.module';
+import { ActivityLogsModule } from '../activity_logs/activity_logs.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { SharedModule } from 'src/common/shared/shared.module';
     ClientsModule,
     UsersModule,
     SharedModule,
+    ActivityLogsModule,
   ],
   controllers: [
     ProductsController,
