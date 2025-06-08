@@ -7,12 +7,14 @@ import {
   ActivityLogItem,
   AuditLogsResponse,
 } from './interfaces/audit-logs-response.interface';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class ActivityLogsService {
   constructor(
     @InjectRepository(ActivityLog)
     private readonly activityLogRepo: Repository<ActivityLog>,
+    private readonly usersService: UsersService,
   ) {}
 
   async log(
@@ -54,6 +56,25 @@ export class ActivityLogsService {
       take,
     });
 
+    const uniqueUserExtIds = [...new Set(logs.map((log) => log.user_ext_id))];
+
+    const userMap = new Map<string, string>();
+
+    await Promise.all(
+      uniqueUserExtIds.map(async (userExtId) => {
+        const user = await this.usersService.findOne(userExtId);
+        if (user) {
+          const fullName = `${user.data.first_name} ${user.data.last_name}`;
+          userMap.set(userExtId, fullName);
+        }
+      }),
+    );
+
+    const enrichedLogs: ActivityLogItem[] = logs.map((log) => ({
+      ...log,
+      user_name: userMap.get(log.user_ext_id) || null,
+    }));
+
     const totalPages = Math.ceil(total / query.displayPerPage);
 
     return {
@@ -61,7 +82,7 @@ export class ActivityLogsService {
         success: true,
         message: 'Successfully fetched data',
       },
-      data: logs as ActivityLogItem[],
+      data: enrichedLogs,
       meta: {
         page: query.pageNumber,
         totalNumber: total,

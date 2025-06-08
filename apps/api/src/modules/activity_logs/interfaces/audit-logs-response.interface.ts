@@ -1,6 +1,7 @@
 export interface ActivityLogItem {
   id: number;
   user_ext_id: string;
+  user_name: string;
   module?: string;
   action?: string;
   description?: string;
