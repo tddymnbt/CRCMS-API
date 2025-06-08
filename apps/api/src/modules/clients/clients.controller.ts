@@ -21,11 +21,15 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { DeleteClientDto } from './dto/delete-client.dto';
 import { BirthMonthParamDto } from './dto/get-celebrant.dto';
+import { ActivityLogsService } from '../activity_logs/activity_logs.service';
 
 @ApiTags('clients')
 @Controller('clients')
 export class ClientsController {
-  constructor(private readonly service: ClientsService) {}
+  constructor(
+    private readonly service: ClientsService,
+    private loggerService: ActivityLogsService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Find all clients' })
@@ -42,7 +46,19 @@ export class ClientsController {
   @Post()
   @ApiOperation({ summary: 'Create client' })
   async create(@Body() dto: CreateClientDto): Promise<IClientResponse> {
-    return this.service.create(dto);
+    const response = await this.service.create(dto);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.created_by,
+        'Client',
+        'create',
+        `Created client ${response.data.first_name} ${response.data.last_name}`,
+        response.data.external_id,
+      );
+    }
+
+    return response;
   }
 
   @Put(':id')
@@ -51,7 +67,19 @@ export class ClientsController {
     @Param('id') id: string,
     @Body() dto: UpdateClientDto,
   ): Promise<IClientResponse> {
-    return this.service.update(id, dto);
+    const response = await this.service.update(id, dto);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.updated_by,
+        'Client',
+        'update',
+        `Updated client ${response.data.first_name} ${response.data.last_name}`,
+        id,
+      );
+    }
+
+    return response;
   }
 
   @Delete(':id')
@@ -60,7 +88,19 @@ export class ClientsController {
     @Param('id') id: string,
     @Body() dto: DeleteClientDto,
   ): Promise<IClientResponse> {
-    return this.service.remove(id, dto.deleted_by);
+    const response = await this.service.remove(id, dto.deleted_by);
+
+    if (response.status.success) {
+      this.loggerService.log(
+        dto.deleted_by,
+        'Client',
+        'delete',
+        `Deleted client ${response.data.first_name} ${response.data.last_name}`,
+        id,
+      );
+    }
+
+    return response;
   }
 
   @Post('celebrant')
