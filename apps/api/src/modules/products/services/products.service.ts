@@ -580,6 +580,8 @@ export class ProductsService {
       });
     }
 
+    const response = await this.findOne(ext_id);
+
     stock.deleted_by = deleted_by;
     product.deleted_by = deleted_by;
 
@@ -599,8 +601,6 @@ export class ProductsService {
       await this.conditionRepo.save(productCondition);
       await this.conditionRepo.softDelete(productCondition.id);
     }
-
-    const response = await this.findOne(ext_id);
 
     return {
       status: { success: true, message: 'Product successfully deleted.' },
