@@ -381,11 +381,11 @@ export class ProductsService {
     const response = await this.findOne(ext_id);
 
     return {
+      ...response,
       status: {
         success: true,
         message: 'Stock updated successfully',
       },
-      ...response,
     };
 
     // return {
@@ -603,8 +603,8 @@ export class ProductsService {
     }
 
     return {
-      status: { success: true, message: 'Product successfully deleted.' },
       ...response,
+      status: { success: true, message: 'Product successfully deleted.' },
     };
 
     return {
