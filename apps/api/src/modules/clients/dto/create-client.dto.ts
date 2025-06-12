@@ -3,7 +3,6 @@ import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
-  IsEmail,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -81,7 +80,6 @@ export class CreateClientDto {
     description: 'Email address of the client',
     example: 'john.doe@example.com',
   })
-  @IsEmail({}, { message: 'Please provide a valid email address' })
   @IsOptional()
   @IsString({ message: 'email must be a string.' })
   email?: string;
