@@ -236,7 +236,10 @@ export class ClientsService {
       bank,
     } = dto;
 
-    await this.checkDuplicateEmail(email.trim());
+    if (email || email.trim() !== '') {
+      await this.checkDuplicateEmail(email.trim());
+    }
+
     await this.checkDuplicateClient(
       first_name.trim(),
       last_name.trim(),
