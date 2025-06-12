@@ -82,16 +82,17 @@ export class CreateClientDto {
     example: 'john.doe@example.com',
   })
   @IsEmail({}, { message: 'Please provide a valid email address' })
-  @IsNotEmpty({ message: 'email is required.' })
-  email: string;
+  @IsOptional()
+  @IsString({ message: 'email must be a string.' })
+  email?: string;
 
   @ApiPropertyOptional({
     description: 'Contact Number',
     example: '09123456789',
   })
-  @IsOptional()
+  @IsNotEmpty({ message: 'contact_no is required.' })
   @IsString({ message: 'contact_no must be a string.' })
-  contact_no?: string;
+  contact_no: string;
 
   @ApiPropertyOptional({
     description: "Client's full address",
@@ -105,9 +106,9 @@ export class CreateClientDto {
     description: "Client's instagram account profile link",
     example: 'https://www.instagram.com/test',
   })
-  @IsOptional()
+  @IsNotEmpty({ message: 'instagram is required.' })
   @IsString({ message: 'instagram must be a string.' })
-  instagram?: string;
+  instagram: string;
 
   @ApiPropertyOptional({
     description: "Client's facebook account profile link",
