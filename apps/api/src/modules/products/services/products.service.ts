@@ -356,6 +356,7 @@ export class ProductsService {
         });
       }
       stock.avail_qty -= qty;
+      product.cost = cost;
     }
 
     stock.updated_by = updated_by;
