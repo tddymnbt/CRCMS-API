@@ -1030,12 +1030,21 @@ export class SalesService {
       if (status === 'Deposit') {
         query = this.salesRepo
           .createQueryBuilder('s')
-          .leftJoin('payment_logs', 'pl', 'pl.sale_ext_id = s.external_id')
-          .select(
-            'SUM(s.total_amount) - COALESCE(SUM(pl.amount), 0)',
+          .leftJoin(
+            (qb) =>
+              qb
+                .select('pl.sale_ext_id', 'sale_ext_id')
+                .addSelect('SUM(pl.amount)', 'total_payments')
+                .from('payment_logs', 'pl')
+                .groupBy('pl.sale_ext_id'),
+            'pl',
+            'pl.sale_ext_id = s.external_id',
+          )
+          .select('COUNT(s.external_id)', 'totalCount')
+          .addSelect(
+            'SUM(s.total_amount) - COALESCE(SUM(pl.total_payments), 0)',
             'totalAmount',
           )
-          .addSelect('COUNT(*)', 'totalCount')
           .where('s.status = :status', { status });
       } else {
         query = this.salesRepo
@@ -1134,12 +1143,21 @@ export class SalesService {
       if (status === 'Deposit') {
         query = this.salesRepo
           .createQueryBuilder('s')
-          .leftJoin('payment_logs', 'pl', 'pl.sale_ext_id = s.external_id')
-          .select(
-            'SUM(s.total_amount) - COALESCE(SUM(pl.amount), 0)',
+          .leftJoin(
+            (qb) =>
+              qb
+                .select('pl.sale_ext_id', 'sale_ext_id')
+                .addSelect('SUM(pl.amount)', 'total_payments')
+                .from('payment_logs', 'pl')
+                .groupBy('pl.sale_ext_id'),
+            'pl',
+            'pl.sale_ext_id = s.external_id',
+          )
+          .select('COUNT(s.external_id)', 'totalCount')
+          .addSelect(
+            'SUM(s.total_amount) - COALESCE(SUM(pl.total_payments), 0)',
             'totalAmount',
           )
-          .addSelect('COUNT(*)', 'totalCount')
           .where('s.status = :status', { status });
       } else {
         query = this.salesRepo
