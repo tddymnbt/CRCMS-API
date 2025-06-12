@@ -16,6 +16,8 @@ async function bootstrap() {
     'http://localhost:5001',
     'https://lwph-sims.vercel.app',
     'https://lwphsims-uat.up.railway.app',
+    'https://lwphsims-prod.up.railway.app',
+    'https://crcms-git-uat-jerryfel13s-projects.vercel.app',
   ];
 
   app.enableCors({
