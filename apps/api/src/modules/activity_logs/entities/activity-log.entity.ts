@@ -16,7 +16,7 @@ export class ActivityLog {
   @Column({ type: 'varchar', length: 100, nullable: true })
   module?: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
+  @Column({ type: 'text', nullable: true })
   action?: string;
 
   @Column({ type: 'text', nullable: true })

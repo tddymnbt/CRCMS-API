@@ -15,13 +15,13 @@ export class ClientBankDetail {
   @Column({ type: 'varchar', length: 10 })
   client_ext_id: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 1000 })
   account_name: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 1000 })
   account_no: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 1000 })
   bank: string;
 
   @Column({ type: 'boolean', default: true })

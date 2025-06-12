@@ -34,7 +34,7 @@ export class Sales {
   @Column({ type: 'timestamp' })
   date_purchased: Date;
 
-  @Column({ type: 'varchar', length: 20 })
+  @Column({ type: 'varchar', length: 10000 })
   status: 'Fully paid' | 'Not paid' | 'Deposit' | 'Cancelled';
 
   @Column({ type: 'varchar', array: true, nullable: true })
