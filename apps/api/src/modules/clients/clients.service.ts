@@ -62,7 +62,8 @@ export class ClientsService {
           OR client.last_name ILIKE :search 
           OR client.email ILIKE :search 
           OR client.instagram ILIKE :search 
-          OR client.facebook ILIKE :search)`,
+          OR client.facebook ILIKE :search 
+          OR client.contact_no ILIKE :search)`,
         { search: `%${searchValue}%` },
       );
     }
