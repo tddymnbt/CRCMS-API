@@ -18,14 +18,14 @@ export class ProductCondition {
   @Column({ type: 'varchar', length: 100 })
   product_ext_id: string;
 
-  @Column({ type: 'decimal' })
-  interior: number;
+  @Column({ type: 'text', nullable: true })
+  interior: string;
 
-  @Column({ type: 'decimal' })
-  exterior: number;
+  @Column({ type: 'text', nullable: true })
+  exterior: string;
 
-  @Column({ type: 'decimal' })
-  overall: number;
+  @Column({ type: 'text', nullable: true })
+  overall: string;
 
   @Column({ type: 'text', nullable: true })
   description?: string;
