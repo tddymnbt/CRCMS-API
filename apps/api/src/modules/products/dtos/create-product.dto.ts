@@ -73,10 +73,10 @@ export class CreateProductDto {
   @IsString({ message: 'Hardware must be a string' })
   hardware?: string;
 
-  @ApiProperty({ example: 'PRD123', required: false })
-  @IsOptional()
+  @ApiProperty({ example: 'PRD123', required: true })
   @IsString({ message: 'Code must be a string' })
-  code?: string;
+  @IsNotEmpty({ message: 'Code is required' })
+  code: string;
 
   @ApiProperty({ example: '10x20', required: false })
   @IsOptional()
