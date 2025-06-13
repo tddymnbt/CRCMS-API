@@ -189,10 +189,10 @@ export class ProductsService {
     const condition = this.conditionRepo.create({
       external_id: condition_ext_id,
       product_ext_id,
-      interior: parseFloat(dto.condition.interior),
-      exterior: parseFloat(dto.condition.exterior),
-      overall: parseFloat(dto.condition.overall),
-      description: dto.condition.description,
+      interior: dto.condition.interior,
+      exterior: dto.condition.exterior,
+      overall: dto.condition.overall,
+      description: dto.condition.description ?? null,
       created_by: dto.created_by,
     });
 
@@ -202,7 +202,7 @@ export class ProductsService {
       product_ext_id,
       is_consigned: dto.is_consigned,
       consigned_date: dto.consigned_date ? new Date(dto.consigned_date) : null,
-      min_qty: dto.stock.min_qty,
+      min_qty: dto.stock.min_qty ?? 0,
       avail_qty: dto.stock.qty_in_stock,
       sold_qty: 0,
       created_by: dto.created_by,
@@ -496,9 +496,9 @@ export class ProductsService {
         productCondition = this.conditionRepo.create({
           external_id: generateUniqueId(10),
           product_ext_id: product.external_id,
-          interior: parseFloat(interior),
-          exterior: parseFloat(exterior),
-          overall: parseFloat(overall),
+          interior: interior,
+          exterior: exterior,
+          overall: overall,
           description: description,
           created_by: dto.updated_by,
         });

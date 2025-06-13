@@ -12,22 +12,22 @@ import {
 } from 'class-validator';
 
 export class ConditionDto {
-  @ApiProperty({ example: '8' })
+  @ApiProperty({ example: '9.8/10' })
   @IsString({ message: 'Interior condition must be a string' })
   @IsNotEmpty({ message: 'Interior condition is required' })
   interior: string;
 
-  @ApiProperty({ example: '9' })
+  @ApiProperty({ example: '9.8/10 (Plastic films intact on hardware feet)' })
   @IsString({ message: 'Exterior condition must be a string' })
   @IsNotEmpty({ message: 'Exterior condition is required' })
   exterior: string;
 
-  @ApiProperty({ example: '96' })
+  @ApiProperty({ example: '98% - Like New Condition' })
   @IsString({ message: 'Overall condition must be a string' })
   @IsNotEmpty({ message: 'Overall condition is required' })
   overall: string;
 
-  @ApiProperty({ example: 'Minor scratches on the frame' })
+  @ApiProperty({ example: 'DONT USE - Currently no purpose on the system' })
   @IsString({ message: 'Condition description must be a string' })
   @IsNotEmpty({ message: 'Condition description is required' })
   description: string;
