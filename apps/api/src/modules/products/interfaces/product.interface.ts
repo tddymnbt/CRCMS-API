@@ -46,9 +46,9 @@ export interface IProduct {
   inclusions: string[];
   images: string[];
   condition: {
-    interior: number;
-    exterior: number;
-    overall: number;
+    interior: string;
+    exterior: string;
+    overall: string;
     description?: string;
   };
   cost: number;

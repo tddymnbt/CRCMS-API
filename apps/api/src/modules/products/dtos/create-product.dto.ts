@@ -17,7 +17,7 @@ export class StockDto {
   @IsNumber({}, { message: 'Minimum quantity must be a number' })
   @IsNotEmpty({ message: 'Minimum quantity is required' })
   @Min(0)
-  min_qty: number;
+  min_qty: number = 0;
 
   @ApiProperty({ example: 10 })
   @IsNumber({}, { message: 'Quantity in stock must be a number' })
@@ -27,25 +27,24 @@ export class StockDto {
 }
 
 export class ConditionDto {
-  @ApiProperty({ example: '8' })
+  @ApiProperty({ example: '9.8/10' })
   @IsString({ message: 'Interior condition must be a string' })
   @IsNotEmpty({ message: 'Interior condition is required' })
   interior: string;
 
-  @ApiProperty({ example: '9' })
+  @ApiProperty({ example: '9.8/10 (Plastic films intact on hardware feet)' })
   @IsString({ message: 'Exterior condition must be a string' })
   @IsNotEmpty({ message: 'Exterior condition is required' })
   exterior: string;
 
-  @ApiProperty({ example: '96' })
+  @ApiProperty({ example: '98% - Like New Condition' })
   @IsString({ message: 'Overall condition must be a string' })
   @IsNotEmpty({ message: 'Overall condition is required' })
   overall: string;
 
-  @ApiProperty({ example: 'Minor scratches on the frame' })
+  @IsOptional()
   @IsString({ message: 'Condition description must be a string' })
-  @IsNotEmpty({ message: 'Condition description is required' })
-  description: string;
+  description?: string;
 }
 
 export class CreateProductDto {
@@ -74,10 +73,10 @@ export class CreateProductDto {
   @IsString({ message: 'Hardware must be a string' })
   hardware?: string;
 
-  @ApiProperty({ example: 'PRD123', required: false })
-  @IsOptional()
+  @ApiProperty({ example: 'PRD123', required: true })
   @IsString({ message: 'Code must be a string' })
-  code?: string;
+  @IsNotEmpty({ message: 'Code is required' })
+  code: string;
 
   @ApiProperty({ example: '10x20', required: false })
   @IsOptional()
