@@ -47,7 +47,10 @@ export class UsersService {
     const baseQuery = this.usersRepo
       .createQueryBuilder('user')
       .leftJoin('user_roles', 'ur', 'ur.user_id = user.external_id')
-      .leftJoin('roles', 'r', 'r.id = ur.role_id');
+      .leftJoin('roles', 'r', 'r.id = ur.role_id')
+      .where('user.email <> :excludeEmail', {
+        excludeEmail: 'lwphtestemail@yopmail.com',
+      });
 
     if (searchValue) {
       baseQuery.andWhere(
