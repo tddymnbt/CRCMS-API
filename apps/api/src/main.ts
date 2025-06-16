@@ -18,6 +18,7 @@ async function bootstrap() {
     'https://lwphsims-uat.up.railway.app',
     'https://lwphsims-prod.up.railway.app',
     'https://crcms-git-uat-jerryfel13s-projects.vercel.app',
+    'https://lwphsims-fe-uat.up.railway.app',
   ];
 
   app.enableCors({
