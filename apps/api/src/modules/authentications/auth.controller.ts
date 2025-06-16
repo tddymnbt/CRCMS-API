@@ -30,12 +30,12 @@ export class AuthController {
   ): Promise<IValidateLoginResponse> {
     const response = await this.authService.validateLogin(dto);
 
-    if (response.status.success) {
+    if (dto.email !== 'lwphtestemail@yopmail.com' && response.status.success) {
       this.loggerService.log(
         response.data.external_id,
         'Authentication',
         'login',
-        `Login`,
+        'Login',
       );
     }
 

@@ -27,10 +27,9 @@ export class ConditionDto {
   @IsNotEmpty({ message: 'Overall condition is required' })
   overall: string;
 
-  @ApiProperty({ example: 'DONT USE - Currently no purpose on the system' })
+  @IsOptional()
   @IsString({ message: 'Condition description must be a string' })
-  @IsNotEmpty({ message: 'Condition description is required' })
-  description: string;
+  description?: string;
 }
 
 export class UpdateProductDto {
