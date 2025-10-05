@@ -185,53 +185,39 @@ export class UsersService {
   }
 
   async findOneByEmail(email: string): Promise<IUserResponse> {
-    const user = await this.usersRepo
-      .createQueryBuilder('user')
-      .leftJoinAndSelect('user_roles', 'ur', 'ur.user_id = user.external_id')
-      .leftJoinAndSelect('roles', 'r', 'r.id = ur.role_id')
-      .where('user.email = :email', { email: email.trim() })
-      .select([
-        'user.id',
-        'user.external_id',
-        'user.first_name',
-        'user.last_name',
-        'user.email',
-        'user.is_active',
-        'user.created_at',
-        'user.created_by',
-        'user.updated_at',
-        'user.updated_by',
-        'user.deleted_at',
-        'user.deleted_by',
-        'user.last_login',
-        'r.id',
-        'r.name',
-      ])
-      .getRawOne();
+    const user = await this.usersRepo.findOne({
+      where: { email: email.trim() },
+      relations: ['roles', 'roles.roles'],
+    });
 
     if (!user) {
-      throw new NotFoundException({
-        status: { success: false, message: 'Invalid email address' },
-      });
+      return {
+        status: { success: false, message: 'Email is not registered.' },
+      };
     }
 
     return {
       status: { success: true, message: 'User details' },
       data: {
-        id: user.user_id,
-        external_id: user.user_external_id,
-        first_name: user.user_first_name,
-        last_name: user.user_last_name,
-        email: user.user_email,
-        is_active: user.user_is_active,
-        created_at: user.user_created_at,
-        created_by: user.user_created_by,
-        updated_at: user.user_updated_at,
-        updated_by: user.user_updated_by,
-        deleted_at: user.user_deleted_at,
-        deleted_by: user.user_deleted_by,
-        last_login: user.user_last_login,
-        role: user.r_id ? { id: user.r_id, name: user.r_name } : undefined,
+        id: user.id,
+        external_id: user.external_id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        is_active: user.is_active,
+        created_at: user.created_at,
+        created_by: user.created_by,
+        updated_at: user.updated_at,
+        updated_by: user.updated_by,
+        deleted_at: user.deleted_at,
+        deleted_by: user.deleted_by,
+        last_login: user.last_login,
+        role: user.roles
+          ? {
+              id: String(user.roles[0].role_id),
+              name: user.roles[0].roles.name,
+            }
+          : undefined,
       },
     };
   }

@@ -10,11 +10,14 @@ import { Roles } from 'src/modules/rbac/entities/roles.entity';
 export class SeederService implements OnModuleInit {
   constructor(
     @InjectRepository(Roles) private roleRepo: Repository<Roles>,
-    @InjectRepository(Permissions) private permissionRepo: Repository<Permissions>,
+    @InjectRepository(Permissions)
+    private permissionRepo: Repository<Permissions>,
     @InjectRepository(Modules) private moduleRepo: Repository<Modules>,
-    @InjectRepository(RolePermissions) private rolePermissionRepo: Repository<RolePermissions>,
+    @InjectRepository(RolePermissions)
+    private rolePermissionRepo: Repository<RolePermissions>,
   ) {}
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   async onModuleInit() {
     await this.seedRoles();
     await this.seedModules();
@@ -22,6 +25,7 @@ export class SeederService implements OnModuleInit {
     await this.seedRolePermissions();
   }
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   private async seedRoles() {
     const count = await this.roleRepo.count();
     if (count === 0) {
@@ -32,6 +36,7 @@ export class SeederService implements OnModuleInit {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   private async seedModules() {
     const count = await this.moduleRepo.count();
     if (count === 0) {
@@ -45,6 +50,7 @@ export class SeederService implements OnModuleInit {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   private async seedPermissions() {
     const count = await this.permissionRepo.count();
     if (count === 0) {
@@ -62,6 +68,7 @@ export class SeederService implements OnModuleInit {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   private async seedRolePermissions() {
     const count = await this.rolePermissionRepo.count();
     if (count > 0) return;
@@ -87,7 +94,11 @@ export class SeederService implements OnModuleInit {
       },
     ];
 
-    const rolePermEntities: {role_id: number, module_id: number, permission_id: number}[] = [];
+    const rolePermEntities: {
+      role_id: number;
+      module_id: number;
+      permission_id: number;
+    }[] = [];
 
     for (const entry of rolePermissionsData) {
       const roleId = roleMap.get(entry.role);
@@ -100,13 +111,12 @@ export class SeederService implements OnModuleInit {
         const moduleName = permName.split('.')[0];
         const moduleId = moduleMap.get(moduleName);
         if (!moduleId) continue;
-        
-        
+
         rolePermEntities.push({
-            role_id: roleId,
-            module_id: moduleId,
-            permission_id: permission.id,
-          });
+          role_id: roleId,
+          module_id: moduleId,
+          permission_id: permission.id,
+        });
       }
     }
 

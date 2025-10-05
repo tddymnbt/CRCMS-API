@@ -17,4 +17,12 @@ export class ValidateLoginDto {
   @IsString({ message: 'otp must be a string.' })
   @IsNotEmpty({ message: 'otp is required.' })
   otp: string;
+
+  @ApiProperty({
+    description: 'Token for validation',
+    example: 'ABSCASJDKJASKLJELKJLJSAJLD',
+  })
+  @IsString({ message: 'token must be a string.' })
+  @IsNotEmpty({ message: 'token is required.' })
+  token: string;
 }

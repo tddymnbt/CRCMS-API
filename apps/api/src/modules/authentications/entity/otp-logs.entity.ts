@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Users } from 'src/modules/users/entity/users.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('user_otp_logs')
 export class UserOTPLogs {
@@ -7,6 +14,9 @@ export class UserOTPLogs {
 
   @Column({ type: 'varchar' })
   email: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  token: string;
 
   @Column({ type: 'varchar' })
   otp: string;
@@ -22,4 +32,9 @@ export class UserOTPLogs {
 
   @Column({ default: false })
   is_expired: boolean;
+
+  // Relationships
+  @ManyToOne(() => Users, (user) => user.otps)
+  @JoinColumn({ name: 'email', referencedColumnName: 'email' })
+  user: Users;
 }

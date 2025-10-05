@@ -1,8 +1,11 @@
+import { Users } from 'src/modules/users/entity/users.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 
 @Entity('activity_logs')
@@ -27,4 +30,9 @@ export class ActivityLog {
 
   @CreateDateColumn()
   created_at: Date;
+
+  // Relationships
+  @ManyToOne(() => Users, (user) => user.activities)
+  @JoinColumn({ name: 'user_ext_id', referencedColumnName: 'external_id' })
+  user: Users;
 }

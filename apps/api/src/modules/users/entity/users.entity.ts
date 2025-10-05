@@ -1,3 +1,7 @@
+import { ActivityLog } from 'src/modules/activity_logs/entities/activity-log.entity';
+import { UserOTPLogs } from 'src/modules/authentications/entity/otp-logs.entity';
+import { UserAuthentications } from 'src/modules/authentications/entity/user-auth.entity';
+import { UserRoles } from 'src/modules/rbac/entities/user-roles.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -5,6 +9,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  OneToMany,
 } from 'typeorm';
 
 @Entity('users')
@@ -12,7 +17,7 @@ export class Users {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', unique: true })
   external_id: string;
 
   @Column({ type: 'varchar' })
@@ -21,7 +26,7 @@ export class Users {
   @Column({ type: 'varchar' })
   last_name: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', unique: true })
   email: string;
 
   @Column({ default: true })
@@ -47,4 +52,23 @@ export class Users {
 
   @Column({ type: 'varchar', nullable: true })
   last_login: string;
+
+  // Relationships
+  @OneToMany(() => ActivityLog, (activities) => activities.user, {
+    cascade: true,
+  })
+  activities: ActivityLog[];
+
+  @OneToMany(() => UserOTPLogs, (otp) => otp.user, { cascade: true })
+  otps: UserOTPLogs[];
+
+  @OneToMany(
+    () => UserAuthentications,
+    (authentication) => authentication.user,
+    { cascade: true },
+  )
+  authentications: UserAuthentications[];
+
+  @OneToMany(() => UserRoles, (role) => role.user)
+  roles: UserRoles[];
 }

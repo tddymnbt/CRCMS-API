@@ -1,8 +1,5 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { RolePermissions } from './role-permissions.entity';
 
 @Entity('permissions')
 export class Permissions {
@@ -15,4 +12,7 @@ export class Permissions {
   @Column({ type: 'varchar' })
   description: string;
 
+  // Relationships
+  @OneToMany(() => RolePermissions, (permission) => permission.permissions)
+  permissions: RolePermissions[];
 }

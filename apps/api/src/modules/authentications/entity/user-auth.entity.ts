@@ -1,8 +1,11 @@
+import { Users } from 'src/modules/users/entity/users.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 
 @Entity('user_authentications')
@@ -30,4 +33,9 @@ export class UserAuthentications {
 
   @Column({ type: 'varchar' })
   created_by: string;
+
+  //Relationships
+  @ManyToOne(() => Users, (user) => user.authentications)
+  @JoinColumn({ name: 'user_ext_id', referencedColumnName: 'external_id' })
+  user: Users;
 }

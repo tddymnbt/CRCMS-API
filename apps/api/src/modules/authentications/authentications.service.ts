@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserOTPLogs } from './entity/otp-logs.entity';
@@ -37,40 +37,48 @@ export class AuthenticationsService {
     const user = await this.usersService.findOneByEmail(dto.email);
 
     const otp = generateOTP(6);
-    const otpLog = this.otpRepo.create({
-      email: dto.email,
-      otp,
-      date_requested: new Date(),
-      is_used: false,
-      is_expired: false,
-    });
-    await this.otpRepo.save(otpLog);
+    const token = generateUniqueId(36);
 
-    // Send OTP via email logic here (skipped for brevity)
-    const templateData = {
-      OTP: otp,
-    };
-    const subject = `${user.data.first_name} ${user.data.last_name} - One-Time Password`;
-    const template = 'otp-template';
-    await this.emailService.sendEmail(
-      templateData,
-      template,
-      dto.email,
-      subject,
-    );
+    if (user.status.success) {
+      const otpLog = this.otpRepo.create({
+        email: dto.email,
+        token,
+        otp,
+        date_requested: new Date(),
+        is_used: false,
+        is_expired: false,
+      });
+      await this.otpRepo.save(otpLog);
+
+      // Send OTP via email logic here (skipped for brevity)
+      const templateData = {
+        OTP: otp,
+      };
+      const subject = `${user.data.first_name} ${user.data.last_name} - One-Time Password`;
+      const template = 'otp-template';
+      await this.emailService.sendEmail(
+        templateData,
+        template,
+        dto.email,
+        subject,
+      );
+    }
 
     return {
-      status: { success: true, message: 'Email sent' },
+      status: {
+        success: true,
+        message: 'If the email exists, an OTP will be sent shortly.',
+        token,
+      },
     };
   }
 
   async validateLogin(dto: ValidateLoginDto): Promise<IValidateLoginResponse> {
-    let user = await this.usersService.findOneByEmail(dto.email);
-
     const otpRecord = await this.otpRepo.findOne({
       where: {
         email: dto.email,
         otp: dto.otp,
+        token: dto.token,
         is_used: false,
         is_expired: false,
       },
@@ -96,6 +104,13 @@ export class AuthenticationsService {
     otpRecord.is_used = true;
     otpRecord.date_validated = new Date();
     await this.otpRepo.save(otpRecord);
+
+    const user = await this.usersService.findOneByEmail(dto.email);
+    if (!user.status.success) {
+      throw new NotFoundException({
+        status: { success: false, message: 'User not found.' },
+      });
+    }
 
     const token = await this.generateAndSaveToken(
       dto.email,
