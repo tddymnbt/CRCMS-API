@@ -6,9 +6,9 @@ import {
   MoreThanOrEqual,
   Repository,
 } from 'typeorm';
-import { Client } from '../../entities/client.entity';
-import { ClientBankDetail } from '../../entities/client-bank.entity';
-import { FindClientsDto } from '../../dto/find-all-clients.dto';
+import { Client } from '../../domain/entities/client.entity';
+import { ClientBankDetail } from '../../domain/entities/client-bank.entity';
+import { FindClientsDto } from '../../application/dtos/find-all-clients.dto';
 import { ClientsRepositoryPort } from '../../domain/repositories/clients.repository.port';
 
 @Injectable()

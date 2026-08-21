@@ -1,8 +1,8 @@
 // src/shared/shared.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { SalesItems } from 'src/modules/sales/entities/sale-items.entity';
-import { Sales } from 'src/modules/sales/entities/sales.entity';
+import { SalesItems } from 'src/modules/sales/domain/entities/sale-items.entity';
+import { Sales } from 'src/modules/sales/domain/entities/sales.entity';
 import { SharedService } from './shared.service';
 
 @Module({

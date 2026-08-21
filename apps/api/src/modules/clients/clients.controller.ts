@@ -9,43 +9,74 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { ClientsService } from './clients.service';
+import { ClientsApplicationService } from './application/services/clients.application.service';
 import {
-  IClientCount,
-  IClientResponse,
-  IClientsResponse,
-} from './interface/client-response.interface';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { FindClientsDto } from './dto/find-all-clients.dto';
-import { CreateClientDto } from './dto/create-client.dto';
-import { UpdateClientDto } from './dto/update-client.dto';
-import { DeleteClientDto } from './dto/delete-client.dto';
-import { BirthMonthParamDto } from './dto/get-celebrant.dto';
-import { ActivityLogsService } from '../activity_logs/activity_logs.service';
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { FindClientsDto } from './application/dtos/find-all-clients.dto';
+import { CreateClientDto } from './application/dtos/create-client.dto';
+import { UpdateClientDto } from './application/dtos/update-client.dto';
+import { DeleteClientDto } from './application/dtos/delete-client.dto';
+import { BirthMonthParamDto } from './application/dtos/get-celebrant.dto';
+import {
+  ClientListResponseDto,
+  ClientResponseDto,
+} from './application/dtos/client.response.dto';
+import { CountStatsResponseDto } from 'src/common/swagger/count-stats.response.dto';
+import {
+  ApiBusinessError,
+  ApiValidationError,
+} from 'src/common/swagger/api-error-responses.decorator';
+import { ActivityLogsApplicationService } from '../activity_logs/application/services/activity-logs.application.service';
 
 @ApiTags('clients')
 @Controller('clients')
 export class ClientsController {
   constructor(
-    private readonly service: ClientsService,
-    private loggerService: ActivityLogsService,
+    private readonly service: ClientsApplicationService,
+    private loggerService: ActivityLogsApplicationService,
   ) {}
 
   @Get()
   @ApiOperation({ summary: 'Find all clients' })
-  async findAll(@Query() query: FindClientsDto): Promise<IClientsResponse> {
+  @ApiOkResponse({
+    description: 'Paginated list of clients',
+    type: ClientListResponseDto,
+  })
+  @ApiValidationError()
+  async findAll(
+    @Query() query: FindClientsDto,
+  ): Promise<ClientListResponseDto> {
     return this.service.findAll(query);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Find specific client' })
-  async findOne(@Param('id') id: string): Promise<IClientResponse> {
+  @ApiOkResponse({ description: 'Client details', type: ClientResponseDto })
+  @ApiBusinessError(404, 'No client exists with the given external id')
+  async findOne(@Param('id') id: string): Promise<ClientResponseDto> {
     return this.service.findOne(id);
   }
 
   @Post()
   @ApiOperation({ summary: 'Create client' })
-  async create(@Body() dto: CreateClientDto): Promise<IClientResponse> {
+  @ApiCreatedResponse({
+    description: 'Client successfully created',
+    type: ClientResponseDto,
+  })
+  @ApiValidationError()
+  @ApiBusinessError(
+    400,
+    'Bank details are required when the client is tagged as a consignor',
+  )
+  @ApiBusinessError(
+    409,
+    'Email address already exists or duplicate client details',
+  )
+  async create(@Body() dto: CreateClientDto): Promise<ClientResponseDto> {
     const response = await this.service.create(dto);
 
     if (response.status.success) {
@@ -63,10 +94,21 @@ export class ClientsController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update client' })
+  @ApiOkResponse({
+    description: 'Client successfully updated',
+    type: ClientResponseDto,
+  })
+  @ApiValidationError()
+  @ApiBusinessError(400, '`updated_by` is required')
+  @ApiBusinessError(404, 'No client exists with the given external id')
+  @ApiBusinessError(
+    409,
+    'Email address already exists or duplicate client details',
+  )
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateClientDto,
-  ): Promise<IClientResponse> {
+  ): Promise<ClientResponseDto> {
     const response = await this.service.update(id, dto);
 
     if (response.status.success) {
@@ -84,10 +126,20 @@ export class ClientsController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete client' })
+  @ApiOkResponse({
+    description: 'Client successfully soft-deleted',
+    type: ClientResponseDto,
+  })
+  @ApiValidationError()
+  @ApiBusinessError(
+    400,
+    '`deleted_by` is required or the client has existing transactions',
+  )
+  @ApiBusinessError(404, 'No client exists with the given external id')
   async remove(
     @Param('id') id: string,
     @Body() dto: DeleteClientDto,
-  ): Promise<IClientResponse> {
+  ): Promise<ClientResponseDto> {
     const response = await this.service.remove(id, dto.deleted_by);
 
     if (response.status.success) {
@@ -105,15 +157,25 @@ export class ClientsController {
 
   @Post('celebrant')
   @ApiOperation({ summary: 'Get client celebrants' })
+  @ApiOkResponse({
+    description:
+      'Active clients whose birth month matches the given month. Returns HTTP 200 with an empty list when none match.',
+    type: ClientListResponseDto,
+  })
+  @ApiValidationError()
   async findCelebrants(
     @Body() dto: BirthMonthParamDto,
-  ): Promise<IClientsResponse> {
+  ): Promise<ClientListResponseDto> {
     return this.service.getClientsByBirthMonth(dto);
   }
 
   @Get('stats/counts')
   @ApiOperation({ summary: 'Find client count' })
-  async getCounts(): Promise<IClientCount> {
+  @ApiOkResponse({
+    description: 'Client counts grouped by creation period',
+    type: CountStatsResponseDto,
+  })
+  async getCounts(): Promise<CountStatsResponseDto> {
     return this.service.getClientCounts();
   }
 }

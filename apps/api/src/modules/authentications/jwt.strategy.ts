@@ -1,17 +1,18 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { JwtPayload } from './interface/jwt-payload.interface';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { UserAuthentications } from './entity/user-auth.entity';
+import { JwtPayload } from './application/interfaces/jwt-payload.interface';
+import {
+  AUTHENTICATIONS_REPOSITORY,
+  AuthenticationsRepositoryPort,
+} from './domain/repositories/authentications.repository.port';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    @InjectRepository(UserAuthentications)
-    private readonly userAuthRepository: Repository<UserAuthentications>,
+    @Inject(AUTHENTICATIONS_REPOSITORY)
+    private readonly authenticationsRepository: AuthenticationsRepositoryPort,
     configService: ConfigService,
   ) {
     super({
@@ -26,9 +27,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Token has been revoked or is invalid');
     }
 
-    const tokenRecord = await this.userAuthRepository.findOne({
-      where: { token_jti: payload.jti, is_active: true },
-    });
+    const tokenRecord =
+      await this.authenticationsRepository.findActiveAuthByJti(payload.jti);
 
     if (!tokenRecord) {
       throw new UnauthorizedException('Token has been revoked or is invalid');

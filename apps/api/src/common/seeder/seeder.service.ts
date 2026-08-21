@@ -1,10 +1,10 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Modules } from 'src/modules/rbac/entities/modules.entity';
-import { RolePermissions } from 'src/modules/rbac/entities/role-permissions.entity';
-import { Permissions } from 'src/modules/rbac/entities/permissions.entity';
-import { Roles } from 'src/modules/rbac/entities/roles.entity';
+import { Modules } from 'src/modules/rbac/domain/entities/modules.entity';
+import { RolePermissions } from 'src/modules/rbac/domain/entities/role-permissions.entity';
+import { Permissions } from 'src/modules/rbac/domain/entities/permissions.entity';
+import { Roles } from 'src/modules/rbac/domain/entities/roles.entity';
 
 @Injectable()
 export class SeederService implements OnModuleInit {

@@ -37,8 +37,19 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('LWPH SIMS API Documentation')
     .setDescription('UAT API for LWPH SIMS')
-    .setVersion('1.0')
+    .setVersion(process.env.npm_package_version || '1.0')
     .addTag('api')
+    .addTag('status', 'Service health and version')
+    .addTag('authentications', 'Login, OTP verification and logout')
+    .addTag('users', 'User accounts and role assignment')
+    .addTag('rbac', 'Roles and permissions management')
+    .addTag('clients', 'Client records, consignors and celebrants')
+    .addTag('products', 'Product inventory, stocks and transactions')
+    .addTag('brands', 'Product brands')
+    .addTag('categories', 'Product categories')
+    .addTag('authenticators', 'Product authenticators')
+    .addTag('sales', 'Sale transactions, payments and statistics')
+    .addTag('activity logs', 'User activity audit trail')
     .addBearerAuth(
       {
         type: 'http',

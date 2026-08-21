@@ -9,16 +9,29 @@ import {
   // UseGuards,
   Query,
 } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { DeleteUserDto } from './dto/delete-user.dto';
-import { IUserResponse, IUsersResponse } from './interface/user.interface';
-import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { UsersApplicationService } from './application/services/users.application.service';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { CreateUserDto } from './application/dtos/create-user.dto';
+import { UpdateUserDto } from './application/dtos/update-user.dto';
+import { DeleteUserDto } from './application/dtos/delete-user.dto';
+import { UpdateUserRoleDto } from './application/dtos/update-user-role.dto';
 // import { JwtAuthGuard } from 'src/common/guard/jwt-auth.guard';
-import { FindUsersDto } from './dto/find-all-users.dto';
-import { ActivityLogsService } from '../activity_logs/activity_logs.service';
+import { FindUsersDto } from './application/dtos/find-all-users.dto';
+import {
+  UserListResponseDto,
+  UserResponseDto,
+} from './application/dtos/user.response.dto';
+import {
+  ApiBusinessError,
+  ApiValidationError,
+} from 'src/common/swagger/api-error-responses.decorator';
+import { ActivityLogsApplicationService } from '../activity_logs/application/services/activity-logs.application.service';
 
 @ApiTags('users')
 @ApiBearerAuth('access-token')
@@ -26,26 +39,39 @@ import { ActivityLogsService } from '../activity_logs/activity_logs.service';
 @Controller('users')
 export class UsersController {
   constructor(
-    private readonly usersService: UsersService,
-    private loggerService: ActivityLogsService,
+    private readonly UsersApplicationService: UsersApplicationService,
+    private loggerService: ActivityLogsApplicationService,
   ) {}
 
   @Get()
   @ApiOperation({ summary: 'Find all users' })
-  async findAll(@Query() query: FindUsersDto): Promise<IUsersResponse> {
-    return this.usersService.findAll(query);
+  @ApiOkResponse({
+    description: 'Paginated list of users',
+    type: UserListResponseDto,
+  })
+  @ApiValidationError()
+  async findAll(@Query() query: FindUsersDto): Promise<UserListResponseDto> {
+    return this.UsersApplicationService.findAll(query);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Find specific user' })
-  async findOne(@Param('id') id: string): Promise<IUserResponse> {
-    return this.usersService.findOne(id);
+  @ApiOkResponse({ description: 'User details', type: UserResponseDto })
+  @ApiBusinessError(404, 'No user exists with the given external id')
+  async findOne(@Param('id') id: string): Promise<UserResponseDto> {
+    return this.UsersApplicationService.findOne(id);
   }
 
   @Post()
   @ApiOperation({ summary: 'Create user' })
-  async create(@Body() dto: CreateUserDto): Promise<IUserResponse> {
-    const response = await this.usersService.create(dto);
+  @ApiCreatedResponse({
+    description: 'User successfully created (a default Staff role is assigned)',
+    type: UserResponseDto,
+  })
+  @ApiValidationError()
+  @ApiBusinessError(409, 'A user with the same email address already exists')
+  async create(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
+    const response = await this.UsersApplicationService.create(dto);
 
     if (response.status.success) {
       this.loggerService.log(
@@ -62,11 +88,19 @@ export class UsersController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update user' })
+  @ApiOkResponse({
+    description: 'User successfully updated',
+    type: UserResponseDto,
+  })
+  @ApiValidationError()
+  @ApiBusinessError(400, '`updated_by` is required')
+  @ApiBusinessError(404, 'No user exists with the given external id')
+  @ApiBusinessError(409, 'Another user already uses the given email address')
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
-  ): Promise<IUserResponse> {
-    const response = await this.usersService.update(id, dto);
+  ): Promise<UserResponseDto> {
+    const response = await this.UsersApplicationService.update(id, dto);
 
     if (response.status.success) {
       this.loggerService.log(
@@ -83,11 +117,21 @@ export class UsersController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete user' })
+  @ApiOkResponse({
+    description: 'User successfully soft-deleted',
+    type: UserResponseDto,
+  })
+  @ApiValidationError()
+  @ApiBusinessError(400, '`deleted_by` is required')
+  @ApiBusinessError(404, 'No user exists with the given external id')
   async remove(
     @Param('id') id: string,
     @Body() dto: DeleteUserDto,
-  ): Promise<IUserResponse> {
-    const response = await this.usersService.remove(id, dto.deleted_by);
+  ): Promise<UserResponseDto> {
+    const response = await this.UsersApplicationService.remove(
+      id,
+      dto.deleted_by,
+    );
 
     if (response.status.success) {
       this.loggerService.log(
@@ -104,11 +148,18 @@ export class UsersController {
 
   @Put('update-role/:id')
   @ApiOperation({ summary: 'Update user role' })
+  @ApiOkResponse({
+    description: 'User role successfully updated',
+    type: UserResponseDto,
+  })
+  @ApiValidationError()
+  @ApiBusinessError(404, 'User or role not found')
+  @ApiBusinessError(409, 'User was already assigned to this role')
   async updateRole(
     @Param('id') id: string,
     @Body() dto: UpdateUserRoleDto,
-  ): Promise<IUserResponse> {
-    const response = await this.usersService.updateUserRole(id, dto);
+  ): Promise<UserResponseDto> {
+    const response = await this.UsersApplicationService.updateUserRole(id, dto);
 
     if (response.status.success) {
       this.loggerService.log(

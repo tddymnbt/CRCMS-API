@@ -12,28 +12,28 @@ import {
   IClientCount,
   IClientResponse,
   IClientsResponse,
-} from '../../interface/client-response.interface';
-import { FindClientsDto } from '../../dto/find-all-clients.dto';
-import { CreateClientDto } from '../../dto/create-client.dto';
+} from '../interfaces/client-response.interface';
+import { FindClientsDto } from '../dtos/find-all-clients.dto';
+import { CreateClientDto } from '../dtos/create-client.dto';
 import { generateUniqueId } from 'src/common/utils/gen-nanoid';
-import { UpdateClientDto } from '../../dto/update-client.dto';
-import { BirthMonthParamDto } from '../../dto/get-celebrant.dto';
-import { UsersService } from '../../../users/users.service';
+import { UpdateClientDto } from '../dtos/update-client.dto';
+import { BirthMonthParamDto } from '../dtos/get-celebrant.dto';
+import { UsersApplicationService } from 'src/modules/users/application/services/users.application.service';
 import * as moment from 'moment';
 import { SharedService } from 'src/common/shared/shared.service';
 import {
   CLIENTS_REPOSITORY,
   ClientsRepositoryPort,
 } from '../../domain/repositories/clients.repository.port';
-import { Client } from '../../entities/client.entity';
-import { ClientBankDetail } from '../../entities/client-bank.entity';
+import { Client } from '../../domain/entities/client.entity';
+import { ClientBankDetail } from '../../domain/entities/client-bank.entity';
 
 @Injectable()
 export class ClientsApplicationService {
   constructor(
     @Inject(CLIENTS_REPOSITORY)
     private readonly clientsRepository: ClientsRepositoryPort,
-    private readonly userService: UsersService,
+    private readonly userService: UsersApplicationService,
     private readonly sharedService: SharedService,
   ) {}
 

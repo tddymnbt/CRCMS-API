@@ -1,16 +1,18 @@
 import { Module } from '@nestjs/common';
-import { AuthenticationsService } from './authentications.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserOTPLogs } from './entity/otp-logs.entity';
-import { UserAuthentications } from './entity/user-auth.entity';
+import { UserOTPLogs } from './domain/entities/otp-logs.entity';
+import { UserAuthentications } from './domain/entities/user-auth.entity';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { EmailService } from 'src/common/email/email.service';
 import { ActivityLogsModule } from '../activity_logs/activity_logs.module';
+import { AuthenticationsApplicationService } from './application/services/authentications.application.service';
+import { AUTHENTICATIONS_REPOSITORY } from './domain/repositories/authentications.repository.port';
+import { TypeormAuthenticationsRepository } from './infrastructure/repositories/typeorm-authentications.repository';
 
 @Module({
   imports: [
@@ -28,7 +30,15 @@ import { ActivityLogsModule } from '../activity_logs/activity_logs.module';
     ActivityLogsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthenticationsService, JwtStrategy, EmailService],
+  providers: [
+    AuthenticationsApplicationService,
+    JwtStrategy,
+    EmailService,
+    {
+      provide: AUTHENTICATIONS_REPOSITORY,
+      useClass: TypeormAuthenticationsRepository,
+    },
+  ],
   exports: [JwtStrategy, PassportModule],
 })
 export class AuthenticationsModule {}

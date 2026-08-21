@@ -1,10 +1,12 @@
 import { forwardRef, Module } from '@nestjs/common';
-import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Users } from './entity/users.entity';
+import { Users } from './domain/entities/users.entity';
 import { RbacModule } from '../rbac/rbac.module';
 import { ActivityLogsModule } from '../activity_logs/activity_logs.module';
+import { UsersApplicationService } from './application/services/users.application.service';
+import { USERS_REPOSITORY } from './domain/repositories/users.repository.port';
+import { TypeormUsersRepository } from './infrastructure/repositories/typeorm-users.repository';
 
 @Module({
   imports: [
@@ -12,8 +14,14 @@ import { ActivityLogsModule } from '../activity_logs/activity_logs.module';
     RbacModule,
     forwardRef(() => ActivityLogsModule),
   ],
-  providers: [UsersService],
+  providers: [
+    UsersApplicationService,
+    {
+      provide: USERS_REPOSITORY,
+      useClass: TypeormUsersRepository,
+    },
+  ],
   controllers: [UsersController],
-  exports: [UsersService],
+  exports: [UsersApplicationService],
 })
 export class UsersModule {}

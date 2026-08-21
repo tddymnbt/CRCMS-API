@@ -1,0 +1,40 @@
+import { Users } from 'src/modules/users/domain/entities/users.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+
+@Entity('user_otp_logs')
+export class UserOTPLogs {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ type: 'varchar' })
+  email: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  token: string;
+
+  @Column({ type: 'varchar' })
+  otp: string;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  date_requested: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  date_validated: Date;
+
+  @Column({ default: false })
+  is_used: boolean;
+
+  @Column({ default: false })
+  is_expired: boolean;
+
+  // Relationships
+  @ManyToOne(() => Users, (user) => user.otps)
+  @JoinColumn({ name: 'email', referencedColumnName: 'email' })
+  user: Users;
+}

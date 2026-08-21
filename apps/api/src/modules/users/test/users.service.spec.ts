@@ -1,15 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UsersService } from '../users.service';
+import { UsersApplicationService } from '../application/services/users.application.service';
+import { RbacApplicationService } from '../../rbac/application/services/rbac.application.service';
+import { USERS_REPOSITORY } from '../domain/repositories/users.repository.port';
 
-describe('UsersService', () => {
-  let service: UsersService;
+describe('UsersApplicationService', () => {
+  let service: UsersApplicationService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService],
+      providers: [
+        UsersApplicationService,
+        { provide: RbacApplicationService, useValue: {} },
+        {
+          provide: USERS_REPOSITORY,
+          useValue: {},
+        },
+      ],
     }).compile();
 
-    service = module.get<UsersService>(UsersService);
+    service = module.get<UsersApplicationService>(UsersApplicationService);
   });
 
   it('should be defined', () => {

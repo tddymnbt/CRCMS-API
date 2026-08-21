@@ -1,7 +1,7 @@
 import { FindOptionsWhere } from 'typeorm';
-import { Client } from '../../entities/client.entity';
-import { ClientBankDetail } from '../../entities/client-bank.entity';
-import { FindClientsDto } from '../../dto/find-all-clients.dto';
+import { Client } from '../entities/client.entity';
+import { ClientBankDetail } from '../entities/client-bank.entity';
+import { FindClientsDto } from '../../application/dtos/find-all-clients.dto';
 
 export const CLIENTS_REPOSITORY = Symbol('CLIENTS_REPOSITORY');
 
