@@ -1,0 +1,688 @@
+{
+  "info": {
+    "_postman_id": "b7e3c2a1-5f4d-4c8e-9a6b-lwphsimsapi01",
+    "name": "LWPH SIMS API",
+    "description": "Collection for the LWPH SIMS NestJS backend (apps/api). Set `baseUrl` to your environment (default http://localhost:3001). Obtain a token via Authentication > Login + Verify OTP; the collection sends `Authorization: Bearer {{token}}` on every request. Note: currently only Logout enforces authentication server-side.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "token", "value": "" },
+    { "key": "userId", "value": "uX9kQ2mVzR" },
+    { "key": "clientId", "value": "cCL0000001" },
+    { "key": "productId", "value": "pPR0000001" },
+    { "key": "saleId", "value": "sSA0000001" },
+    { "key": "categoryId", "value": "pCA0000001" },
+    { "key": "brandId", "value": "pBR0000001" },
+    { "key": "authenticatorId", "value": "pAU0000001" },
+    { "key": "consignorId", "value": "cCL0000001" }
+  ],
+  "item": [
+    {
+      "name": "Status",
+      "item": [
+        {
+          "name": "Get status",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/status", "host": ["{{baseUrl}}"], "path": ["status"] },
+            "description": "Service health and version."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login (request OTP)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "description": "Sends an OTP to the email (if registered) and returns a one-time `status.token` needed by Login/Verify. Response is identical whether or not the email exists."
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\",\n  \"token\": \"<one-time token from login>\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login/verify", "host": ["{{baseUrl}}"], "path": ["auth", "login", "verify"] },
+            "description": "Returns `access.token` (JWT, 3600 s) on success. Copy it into the `token` collection variable. 404 when the OTP/token is invalid, expired or already used."
+          }
+        },
+        {
+          "name": "Resend OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login/resend", "host": ["{{baseUrl}}"], "path": ["auth", "login", "resend"] },
+            "description": "Generates a new OTP and one-time token; the previous token becomes unusable."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "auth": "bearer",
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] },
+            "description": "Revokes the current bearer token. The only endpoint that requires authentication today; returns 401 when the token is missing/invalid/expired/revoked."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users?searchValue=&isActive=Y&pageNumber=1&displayPerPage=10&sortBy=first_name&orderBy=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "searchValue", "value": "" },
+                { "key": "isActive", "value": "Y", "description": "Y or N (default Y)" },
+                { "key": "pageNumber", "value": "1" },
+                { "key": "displayPerPage", "value": "10" },
+                { "key": "sortBy", "value": "first_name" },
+                { "key": "orderBy", "value": "asc" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get user",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] }
+          }
+        },
+        {
+          "name": "Create user",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"created_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] },
+            "description": "201 on success; 409 when the email already exists."
+          }
+        },
+        {
+          "name": "Update user",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Jane\",\n  \"updated_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] },
+            "description": "Partial update: any subset of first_name, last_name, email, created_by, updated_by, deleted_by."
+          }
+        },
+        {
+          "name": "Delete user",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deleted_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] }
+          }
+        },
+        {
+          "name": "Update user role",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleName\": \"Admin\",\n  \"updated_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/update-role/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "update-role", "{{userId}}"] },
+            "description": "Roles are seeded: Admin, Staff. 409 when the user already has the role."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clients",
+      "item": [
+        {
+          "name": "List clients",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/clients?searchValue=&isActive=Y&isConsignor=N&pageNumber=1&displayPerPage=10&sortBy=first_name&orderBy=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients"],
+              "query": [
+                { "key": "searchValue", "value": "" },
+                { "key": "isActive", "value": "Y" },
+                { "key": "isConsignor", "value": "N" },
+                { "key": "pageNumber", "value": "1" },
+                { "key": "displayPerPage", "value": "10" },
+                { "key": "sortBy", "value": "first_name" },
+                { "key": "orderBy", "value": "asc" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get client",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/clients/{{clientId}}", "host": ["{{baseUrl}}"], "path": ["clients", "{{clientId}}"] }
+          }
+        },
+        {
+          "name": "Create client",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"John\",\n  \"middle_name\": \"Marquez\",\n  \"last_name\": \"Cruz\",\n  \"suffix\": \"Jr.\",\n  \"birth_date\": \"1999-04-01\",\n  \"email\": \"john.doe@example.com\",\n  \"contact_no\": \"09123456789\",\n  \"address\": \"Block 1, Street 2, City\",\n  \"instagram\": \"https://www.instagram.com/test\",\n  \"facebook\": \"https://www.facebook.com/test\",\n  \"is_consignor\": false,\n  \"created_by\": \"system\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/clients", "host": ["{{baseUrl}}"], "path": ["clients"] },
+            "description": "When is_consignor is true, bank details ({account_name, account_no, bank}) are required."
+          }
+        },
+        {
+          "name": "Update client",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contact_no\": \"09987654321\",\n  \"updated_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/clients/{{clientId}}", "host": ["{{baseUrl}}"], "path": ["clients", "{{clientId}}"] }
+          }
+        },
+        {
+          "name": "Delete client",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deleted_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/clients/{{clientId}}", "host": ["{{baseUrl}}"], "path": ["clients", "{{clientId}}"] },
+            "description": "400 when the client has existing sales transactions."
+          }
+        },
+        {
+          "name": "Get celebrants",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"month\": 6\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/clients/celebrant", "host": ["{{baseUrl}}"], "path": ["clients", "celebrant"] },
+            "description": "Active clients whose birth month matches (1-12)."
+          }
+        },
+        {
+          "name": "Get client counts",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/clients/stats/counts", "host": ["{{baseUrl}}"], "path": ["clients", "stats", "counts"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products?searchValue=&isConsigned=N&isOutOfStock=N&isLowStock=N&pageNumber=1&displayPerPage=10&sortBy=name&orderBy=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "searchValue", "value": "" },
+                { "key": "isConsigned", "value": "N" },
+                { "key": "isOutOfStock", "value": "N" },
+                { "key": "isLowStock", "value": "N" },
+                { "key": "pageNumber", "value": "1" },
+                { "key": "displayPerPage", "value": "10" },
+                { "key": "sortBy", "value": "name" },
+                { "key": "orderBy", "value": "asc" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get product",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/id/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "id", "{{productId}}"] }
+          }
+        },
+        {
+          "name": "Create product",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_ext_id\": \"{{categoryId}}\",\n  \"brand_ext_id\": \"{{brandId}}\",\n  \"name\": \"Louis Vuitton Speedy 25\",\n  \"material\": \"Canvas\",\n  \"hardware\": \"Gold\",\n  \"code\": \"LV-SP25\",\n  \"measurement\": \"25cm\",\n  \"model\": \"Speedy 25\",\n  \"inclusion\": [\"Dust bag\", \"Receipt\"],\n  \"images\": [],\n  \"condition\": {\n    \"interior\": \"Clean\",\n    \"exterior\": \"Minor scratches\",\n    \"overall\": \"Good\"\n  },\n  \"stock\": {\n    \"min_qty\": 1,\n    \"qty_in_stock\": 2\n  },\n  \"cost\": 50000,\n  \"price\": 90000,\n  \"is_consigned\": false,\n  \"created_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] },
+            "description": "Consigned products additionally require consignor_ext_id (an existing client flagged as consignor), consignor_selling_price and optionally consigned_date."
+          }
+        },
+        {
+          "name": "Update product",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_ext_id\": \"{{categoryId}}\",\n  \"brand_ext_id\": \"{{brandId}}\",\n  \"name\": \"Louis Vuitton Speedy 25\",\n  \"condition\": {\n    \"interior\": \"Clean\",\n    \"exterior\": \"Minor scratches\",\n    \"overall\": \"Good\"\n  },\n  \"cost\": 50000,\n  \"price\": 95000,\n  \"is_consigned\": false,\n  \"updated_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products/id/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "id", "{{productId}}"] }
+          }
+        },
+        {
+          "name": "Delete product",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deleted_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products/id/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "id", "{{productId}}"] }
+          }
+        },
+        {
+          "name": "Update stock",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"increase\",\n  \"qty\": 1,\n  \"cost\": 50000,\n  \"updated_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products/update-stock/id/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "update-stock", "id", "{{productId}}"] },
+            "description": "type: increase | decrease. Decrease cannot exceed available stock."
+          }
+        },
+        {
+          "name": "Product transactions",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"searchValue\": \"\",\n  \"pageNumber\": 1,\n  \"displayPerPage\": 10,\n  \"sortBy\": \"created_at\",\n  \"orderBy\": \"desc\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products/id/{{productId}}/transactions", "host": ["{{baseUrl}}"], "path": ["products", "id", "{{productId}}", "transactions"] }
+          }
+        },
+        {
+          "name": "Consignor items",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/consignor/{{consignorId}}/items?searchValue=&pageNumber=1&displayPerPage=10&sortBy=name&orderBy=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "consignor", "{{consignorId}}", "items"],
+              "query": [
+                { "key": "searchValue", "value": "" },
+                { "key": "pageNumber", "value": "1" },
+                { "key": "displayPerPage", "value": "10" },
+                { "key": "sortBy", "value": "name" },
+                { "key": "orderBy", "value": "asc" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get product counts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/stats/counts?isConsigned=N",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "stats", "counts"],
+              "query": [{ "key": "isConsigned", "value": "N", "description": "Optional Y/N filter" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product Categories",
+      "item": [
+        {
+          "name": "List categories",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/categories", "host": ["{{baseUrl}}"], "path": ["products", "categories"] }
+          }
+        },
+        {
+          "name": "Get category",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/categories/id/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["products", "categories", "id", "{{categoryId}}"] }
+          }
+        },
+        {
+          "name": "Create category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Handbags\",\n  \"created_by\": \"admin_user\"\n}" },
+            "url": { "raw": "{{baseUrl}}/products/categories", "host": ["{{baseUrl}}"], "path": ["products", "categories"] }
+          }
+        },
+        {
+          "name": "Update category",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Handbags\",\n  \"updated_by\": \"admin_user\"\n}" },
+            "url": { "raw": "{{baseUrl}}/products/categories/id/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["products", "categories", "id", "{{categoryId}}"] }
+          }
+        },
+        {
+          "name": "Delete category",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"deleted_by\": \"admin_user\"\n}" },
+            "url": { "raw": "{{baseUrl}}/products/categories/id/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["products", "categories", "id", "{{categoryId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product Brands",
+      "item": [
+        {
+          "name": "List brands",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/brands", "host": ["{{baseUrl}}"], "path": ["products", "brands"] }
+          }
+        },
+        {
+          "name": "Get brand",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/brands/id/{{brandId}}", "host": ["{{baseUrl}}"], "path": ["products", "brands", "id", "{{brandId}}"] }
+          }
+        },
+        {
+          "name": "Create brand",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Louis Vuitton\",\n  \"created_by\": \"admin_user\"\n}" },
+            "url": { "raw": "{{baseUrl}}/products/brands", "host": ["{{baseUrl}}"], "path": ["products", "brands"] }
+          }
+        },
+        {
+          "name": "Update brand",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Louis Vuitton\",\n  \"updated_by\": \"admin_user\"\n}" },
+            "url": { "raw": "{{baseUrl}}/products/brands/id/{{brandId}}", "host": ["{{baseUrl}}"], "path": ["products", "brands", "id", "{{brandId}}"] }
+          }
+        },
+        {
+          "name": "Delete brand",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"deleted_by\": \"admin_user\"\n}" },
+            "url": { "raw": "{{baseUrl}}/products/brands/id/{{brandId}}", "host": ["{{baseUrl}}"], "path": ["products", "brands", "id", "{{brandId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product Authenticators",
+      "item": [
+        {
+          "name": "List authenticators",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/authenticators", "host": ["{{baseUrl}}"], "path": ["products", "authenticators"] }
+          }
+        },
+        {
+          "name": "Get authenticator",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/authenticators/id/{{authenticatorId}}", "host": ["{{baseUrl}}"], "path": ["products", "authenticators", "id", "{{authenticatorId}}"] }
+          }
+        },
+        {
+          "name": "Create authenticator",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Real Authentication\",\n  \"created_by\": \"admin_user\"\n}" },
+            "url": { "raw": "{{baseUrl}}/products/authenticators", "host": ["{{baseUrl}}"], "path": ["products", "authenticators"] }
+          }
+        },
+        {
+          "name": "Update authenticator",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Real Authentication\",\n  \"updated_by\": \"admin_user\"\n}" },
+            "url": { "raw": "{{baseUrl}}/products/authenticators/id/{{authenticatorId}}", "host": ["{{baseUrl}}"], "path": ["products", "authenticators", "id", "{{authenticatorId}}"] }
+          }
+        },
+        {
+          "name": "Delete authenticator",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"deleted_by\": \"admin_user\"\n}" },
+            "url": { "raw": "{{baseUrl}}/products/authenticators/id/{{authenticatorId}}", "host": ["{{baseUrl}}"], "path": ["products", "authenticators", "id", "{{authenticatorId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sales",
+      "item": [
+        {
+          "name": "List all sales",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/sales?searchValue=&pageNumber=1&displayPerPage=10&sortBy=created_at&orderBy=desc&dateFrom=&dateTo=",
+              "host": ["{{baseUrl}}"],
+              "path": ["sales"],
+              "query": [
+                { "key": "searchValue", "value": "" },
+                { "key": "pageNumber", "value": "1" },
+                { "key": "displayPerPage", "value": "10" },
+                { "key": "sortBy", "value": "created_at" },
+                { "key": "orderBy", "value": "desc" },
+                { "key": "dateFrom", "value": "", "description": "YYYY-MM-DD" },
+                { "key": "dateTo", "value": "", "description": "YYYY-MM-DD" }
+              ]
+            }
+          }
+        },
+        { "name": "List regular sales", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/sales/regular", "host": ["{{baseUrl}}"], "path": ["sales", "regular"] } } },
+        { "name": "List layaway sales", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/sales/layaway", "host": ["{{baseUrl}}"], "path": ["sales", "layaway"] } } },
+        { "name": "List overdue layaways", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/sales/overdue", "host": ["{{baseUrl}}"], "path": ["sales", "overdue"] } } },
+        { "name": "List consigned sales", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/sales/consigned", "host": ["{{baseUrl}}"], "path": ["sales", "consigned"] } } },
+        { "name": "List cancelled sales", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/sales/cancelled", "host": ["{{baseUrl}}"], "path": ["sales", "cancelled"] } } },
+        { "name": "List fully paid sales", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/sales/paid", "host": ["{{baseUrl}}"], "path": ["sales", "paid"] } } },
+        {
+          "name": "Client transactions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/sales/client/{{clientId}}/transactions?pageNumber=1&displayPerPage=10&orderBy=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["sales", "client", "{{clientId}}", "transactions"],
+              "query": [
+                { "key": "pageNumber", "value": "1" },
+                { "key": "displayPerPage", "value": "10" },
+                { "key": "orderBy", "value": "desc" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get sale",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/sales/id/{{saleId}}", "host": ["{{baseUrl}}"], "path": ["sales", "id", "{{saleId}}"] }
+          }
+        },
+        {
+          "name": "Create sale",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client_ext_id\": \"{{clientId}}\",\n  \"type\": \"L\",\n  \"products\": [\n    { \"product_ext_id\": \"{{productId}}\", \"qty\": 1 }\n  ],\n  \"layaway\": {\n    \"no_of_months\": 3,\n    \"due_date\": \"2025-09-01\"\n  },\n  \"is_discounted\": false,\n  \"discount_percentage\": \"0\",\n  \"discount_flat_rate\": \"0\",\n  \"date_purchased\": \"2025-06-01\",\n  \"payment\": {\n    \"amount\": \"30000\",\n    \"payment_date\": \"2025-06-01\",\n    \"payment_method\": \"Cash\"\n  },\n  \"images\": [],\n  \"created_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/sales", "host": ["{{baseUrl}}"], "path": ["sales"] },
+            "description": "type R = regular (fully paid), L = layaway (requires layaway plan; deposit must not exceed total)."
+          }
+        },
+        {
+          "name": "Record payment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sale_ext_id\": \"{{saleId}}\",\n  \"payment\": {\n    \"amount\": \"10000\",\n    \"payment_date\": \"2025-07-01\",\n    \"payment_method\": \"Cash\"\n  },\n  \"created_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/sales/payment", "host": ["{{baseUrl}}"], "path": ["sales", "payment"] },
+            "description": "Layaway payments only; rejects fully paid/cancelled sales and overpayments."
+          }
+        },
+        {
+          "name": "Cancel sale",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sale_ext_id\": \"{{saleId}}\",\n  \"cancelled_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/sales/cancel", "host": ["{{baseUrl}}"], "path": ["sales", "cancel"] },
+            "description": "Cancels the sale and returns sold quantities to stock."
+          }
+        },
+        {
+          "name": "Extend layaway due date",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"due_date\": \"2025-10-01\",\n  \"updated_by\": \"admin_user\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/sales/layaway/extend-due-date/{{saleId}}", "host": ["{{baseUrl}}"], "path": ["sales", "layaway", "extend-due-date", "{{saleId}}"] },
+            "description": "New due date must be later than the current due date."
+          }
+        },
+        {
+          "name": "Transaction statistics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/sales/transaction/stats?mode=A&dateFrom=&dateTo=",
+              "host": ["{{baseUrl}}"],
+              "path": ["sales", "transaction", "stats"],
+              "query": [
+                { "key": "mode", "value": "A", "description": "A=all, CN=consigned, R=regular, L=layaway" },
+                { "key": "dateFrom", "value": "", "description": "YYYY-MM-DD" },
+                { "key": "dateTo", "value": "", "description": "YYYY-MM-DD" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Customer purchase frequencies",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/sales/transaction/frequencies?dateFrom=&dateTo=",
+              "host": ["{{baseUrl}}"],
+              "path": ["sales", "transaction", "frequencies"],
+              "query": [
+                { "key": "dateFrom", "value": "", "description": "YYYY-MM-DD" },
+                { "key": "dateTo", "value": "", "description": "YYYY-MM-DD" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Activity Logs",
+      "item": [
+        {
+          "name": "List activity logs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/logs/activity?userExternalId=&module=&dateFrom=&dateTo=&pageNumber=1&displayPerPage=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["logs", "activity"],
+              "query": [
+                { "key": "userExternalId", "value": "" },
+                { "key": "module", "value": "" },
+                { "key": "dateFrom", "value": "", "description": "YYYY-MM-DD" },
+                { "key": "dateTo", "value": "", "description": "YYYY-MM-DD" },
+                { "key": "pageNumber", "value": "1" },
+                { "key": "displayPerPage", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
