@@ -1,212 +1,155 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# LWPH SIMS API — Documentation
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Documentation for the **LWPH SIMS** backend (`apps/api`, package `lwphsims-api` v2.0): a NestJS REST API for managing users, clients (including consignors), luxury-goods product inventory, and sales (regular, layaway and consigned), with OTP-based authentication and an RBAC foundation.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+> Source of truth for these documents is the code itself (`apps/api/src`). If a document and the code disagree, the code wins.
 
-## Description
+## Documents
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+| File | Contents |
+| --- | --- |
+| [README.md](./README.md) | Project overview, setup, configuration, commands |
+| [ERD.md](./ERD.md) | Database schema: tables, keys, relationships |
+| [API.md](./API.md) | HTTP API reference (all 58 routes) |
+| [POSTMAN.md](./POSTMAN.md) | How to use the Postman collection |
+| [postman/collection.json](./postman/collection.json) | Importable Postman v2.1 collection |
 
-## Installation
+## Tech Stack
 
-1. Clone the CustomerAPI repository to your `VS Code`:
-```bash
-https://gitlab.medilink.com.ph/philgood/cms/customer-api-nestjs.git
-```
-2. Change branch from `main` to your own checkout branch (ex. remote origin `feature/PHILG-454`)
+- **Runtime:** Node.js + TypeScript
+- **Framework:** NestJS 10 (Express platform)
+- **Database:** PostgreSQL via TypeORM 0.3 (migrations only, `synchronize: false`)
+- **Auth:** JWT (`@nestjs/jwt` + Passport) with email OTP delivery over SMTP (Nodemailer)
+- **Validation:** `class-validator` / `class-transformer` via a global `ValidationPipe`
+- **API docs:** `@nestjs/swagger` (OpenAPI 3.0 UI served by the app)
+- **Tests:** Jest (+ ts-jest); linting via ESLint + Prettier (husky + lint-staged pre-commit)
 
-## Setting up the Config
+## Architecture
 
-1. Copy the `.env.example` from `.docker\local` to the `root` and name it as `.env` or using the command below:
-```bash
-cp .docker/local/.env.example .env
-```
-2. Your .env file should have the ff:
+The app lives in `apps/api/src` and follows a modular, DDD-flavoured layout:
 
 ```
-DATABASE_HOST=localhost
-DATABASE_PORT=port
-DATABASE_USERNAME=username
-DATABASE_PASSWORD=password
-DATABASE_NAME=postgres
-JWT_SECRET=<JWT key>
-SMTP_HOST=host
-SMTP_PORT=port
-SMTP_USERNAME=username
-SMTP_PASSWORD=password
-SMTP_FROM=email
-```
-
-## Project setup with Docker
-
-- Open the VS Code terminal and enter `docker-compose up --build`.
-- It will automatically compile, build, and run the project.
-- To stop the current build, on the terminal click `ctrl + c` and enter `docker-compose down -v`.
-
-## Proposed Folder Structure
-
-```
-poc-nest/
-├── src/
-│   ├── common/
-│   │   ├── decorators/
-│   │   ├── dto/
-│   │   │   └── create-user.dto.ts
-│   │   ├── exceptions/
-│   │   ├── filters/
-│   │   │   └── http-exception.filter.ts
-│   │   ├── guards/
-│   │   ├── interceptors/
-│   │   ├── pipes/
-│   │   └── utils/
-│   │       └── email-validator.util.ts
-│   ├── config/
-│   │   └── typeorm.config.ts
-│   ├── modules/
-│   │   ├── user/
-│   │   │   ├── dto/
-│   │   │   ├── entities/
-│   │   │   │   └── user.entity.ts
-│   │   │   ├── user.controller.ts
-│   │   │   ├── user.module.ts
-│   │   │   ├── user.service.ts
-│   │   │   └── user.repository.ts
-│   │   └── auth/
-│   │       ├── dto/
-│   │       │   └── auth-credentials.dto.ts
-│   │       ├── entities/
-│   │       ├── auth.controller.ts
-│   │       ├── auth.module.ts
-│   │       ├── auth.service.ts
-│   │       ├── jwt.strategy.ts
-│   │       └── auth.repository.ts
-│   ├── app.module.ts
-│   ├── main.ts
-├── .env
-├── .gitignore
-├── nest-cli.json
-├── package.json
-└── tsconfig.json
-
-```
-
-## Folder Definitions
-
 src/
-• common/: Contains shared modules and utilities used throughout the application.
-
-• decorators/: Custom decorators for validation, logging, etc.
-
-• dto/: Shared Data Transfer Objects (DTOs) used across modules, such as create-user.dto.ts.
-
-• exceptions/: Custom exceptions or error handling logic.
-
-• filters/: Contains filters like http-exception.filter.ts for global exception handling.
-
-• guards/: Custom guards for authorization.
-
-• interceptors/: Custom interceptors for logging, transformation, etc.
-
-• pipes/: Custom pipes for validation and transformation.
-
-• utils/: Utility functions like email-validator.util.ts.
-
-• config/: Configuration files for different environments or services.
-
-• modules/: Contains feature-specific modules for the application.
-
-## Running API
-
-1. Make sure `internal-tool` and `philgood-db` is running.
-2. Open Postman
-3. Execute sample API endpoint below
-4. Call the API:
-   `http://localhost:3000/auth/login`
-   `POST`
-   supply your desired `{ email, password }`
-
-```
-{
-  "email": "teodoro_manabat@medilink.ph",
-  "password": "password"
-}
-```
-This will send an email containing your `OTP`.
-
-5. Call the API `http://localhost:3000/auth/validate-login` `POST`
-```
-{
-  "email": "teodoro_manabat@medilink.ph",
-  "otp": "294540"
-}
+├── main.ts                  # Bootstrap: CORS whitelist, Swagger (/api), global ValidationPipe, port 3001
+├── app.module.ts            # Root module (ConfigModule, TypeORM, feature modules)
+├── config/typeorm.ts        # TypeORM DataSource options from env vars
+├── database/data-source.ts  # CLI data source for TypeORM migration commands
+├── migrations/              # SQL migrations (initial schema: 22 tables)
+├── common/
+│   ├── swagger/             # Shared response/error DTOs + Swagger decorators
+│   ├── seeder/              # Seeds roles/modules/permissions on boot
+│   └── email/               # Nodemailer SMTP service (OTP emails)
+└── modules/
+    ├── authentications/     # Login + OTP verify/resend, logout/token revocation, JWT strategy
+    ├── users/               # User CRUD + role assignment
+    ├── rbac/                # Roles, permissions, modules entities (no HTTP routes yet)
+    ├── clients/             # Client CRUD, consignors, birthday celebrants, stats
+    ├── products/            # Products, stocks, movements + brands/categories/authenticators
+    ├── sales/               # Sales (regular/layaway/consigned), payments, cancellations, stats
+    ├── activity_logs/       # Audit trail of user actions
+    └── status/              # Health/version endpoint
 ```
 
-This will return `Token` use for authenticated API calls.
+Each feature module is split into `application` (services, DTOs), `domain` (entities, repository ports) and `infrastructure` (TypeORM repositories/controllers wiring).
 
-Authenticated Call:
+## Modules / Features
 
-- URL: http://localhost:3000/users
-- Method: GET
-- Headers:
-- Content-Type: application/json
-- Authorization: Bearer Token (paste `Token` from `Login`)
+| Module | Highlights |
+| --- | --- |
+| **Authentication** | Email → OTP (SMTP) → JWT access token (3600 s expiry). Tokens are persisted and revoked on logout. |
+| **Users** | CRUD + soft delete, search/sort/pagination, role assignment (`Admin`/`Staff` seeded). |
+| **RBAC** | Roles / modules / permissions tables + seeder. No HTTP endpoints yet. |
+| **Clients** | CRUD + soft delete, consignor flag (bank details required for consignors), birthday celebrants lookup, count stats. |
+| **Products** | CRUD + soft delete with nested condition & stock creation, stock adjustments (increase/decrease) recorded as movements, per-product transaction history, consignor item listing, count stats. Plus CRUD for brands, categories and authenticators. |
+| **Sales** | Create regular (`R`) or layaway (`L`) sales, record payments, cancel (restocks items), extend layaway due dates, multiple filtered listings, transaction statistics and customer purchase frequency metrics. |
+| **Activity logs** | Paginated audit trail written by other modules on create/update/delete. |
 
-6. Access the API Docs on browser using this URL `http://localhost:3000/api`
+## Database Overview
 
-## Run tests
+- PostgreSQL; connection configured through `DATABASE_*` env vars (`src/config/typeorm.ts`).
+- Schema managed exclusively by migrations (`npm run migration:run`); initial migration creates **22 tables**.
+- Domain tables reference each other by `*_ext_id` columns (public nanoid-style identifiers). Only auth/RBAC/log tables have real database foreign keys — see [ERD.md](./ERD.md).
+- On boot, `SeederService` inserts default RBAC rows when the tables are empty: roles `Admin`/`Staff`, 5 modules, 20 `Module.action` permissions, and role-permission mappings (Admin = all, Staff = read/update).
+
+## API Overview
+
+- Interactive OpenAPI docs: **`http://localhost:3001/api`** (JSON at `/api-json`).
+- All responses use a `{ status: { success, message }, data?, meta? }` envelope; validation failures return the standard NestJS `{ statusCode, message[], error }` body with HTTP 400.
+- Full endpoint reference: [API.md](./API.md).
+
+### Authentication
+
+1. `POST /auth/login` with `{ email }` → sends an OTP to the user's email and returns a one-time `token`.
+2. `POST /auth/login/verify` with `{ email, otp, token }` → returns a JWT access token (valid 3600 s).
+3. Call protected operations with `Authorization: Bearer <token>`.
+4. `POST /auth/logout` (requires the bearer token) revokes the token.
+
+> **Note:** the `JwtAuthGuard` is currently enabled only on `POST /auth/logout`. Other controllers declare bearer auth in Swagger but do not enforce it at runtime yet.
+
+## Configuration
+
+Create `apps/api/.env` (loaded by `dotenv`; also consumed by Docker Compose from the repo root):
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DATABASE_HOST` | Yes | PostgreSQL host |
+| `DATABASE_PORT` | Yes | PostgreSQL port (defaults to 5432 if unset/invalid) |
+| `DATABASE_USERNAME` | Yes | Database user |
+| `DATABASE_PASSWORD` | Yes | Database password |
+| `DATABASE_NAME` | Yes | Database name |
+| `JWT_SECRET` | Yes | Secret used to sign/verify access tokens |
+| `SMTP_HOST` | Yes (login flow) | SMTP server for OTP emails |
+| `SMTP_PORT` | Yes (login flow) | SMTP port |
+| `SMTP_USERNAME` | Yes (login flow) | SMTP user |
+| `SMTP_PASSWORD` | Yes (login flow) | SMTP password |
+| `SMTP_FROM` | Yes (login flow) | From address for OTP emails |
+
+No secrets or credentials are stored in this repository.
+
+## Running the Application
 
 ```bash
-# unit tests
-$ npm run test
+# from apps/api
+npm install
 
-# e2e tests
-$ npm run test:e2e
+# ensure PostgreSQL is reachable and configured in .env, then apply the schema
+npm run migration:run
 
-# test coverage
-$ npm run test:cov
+# development (watch mode)
+npm run start:dev
+
+# production
+npm run build
+npm run start:prod        # node dist/main
 ```
 
-## Resources
+The API listens on **port 3001** (`main.ts`); Swagger UI at `http://localhost:3001/api`.
 
-Check out a few resources that may come in handy when working with NestJS:
+Docker option (repo root): `docker-compose up --build` builds `apps/api` and loads `./.env`. Note that Compose maps host port `3000` to container port `3000`, while the app listens on `3001` inside the container — adjust before relying on it.
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Build, Test, Lint
 
-## Support
+```bash
+npm run build       # compile to dist/
+npm run test        # unit tests (Jest)
+npm run test:watch  # watch mode
+npm run test:cov    # coverage
+npm run lint        # ESLint (--fix)
+npm run format      # Prettier
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Migrations
 
-## Stay in touch
+```bash
+npm run migration:run      # apply pending migrations
+npm run migration:revert   # revert last migration
+npm run migration:show     # list migrations and status
+npm run migration:generate # generate diff from entities (requires reachable DB)
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Development Notes
 
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- Global `ValidationPipe` uses `whitelist`, `forbidNonWhitelisted` and `forbidUnknownValues`: unknown properties are rejected with HTTP 400.
+- Deletes are soft (`deleted_at` / `deleted_by`) across domain tables; several delete/update endpoints require an audit field such as `deleted_by` in the body.
+- Activity logging is performed inline by application services after successful mutations.
+- Pre-commit hooks run ESLint, Prettier and `tsc --noEmit` on staged `.ts` files (husky + lint-staged).
