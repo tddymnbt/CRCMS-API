@@ -1,11 +1,17 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ActivityLogsApplicationService } from './application/services/activity-logs.application.service';
 import { AuditTrailQueryDto } from './application/dtos/audit-trail-query.dto';
 import { ActivityLogListResponseDto } from './application/dtos/activity-log.response.dto';
 import { ApiValidationError } from 'src/common/swagger/api-error-responses.decorator';
 
 @ApiTags('activity logs')
+@ApiBearerAuth('access-token')
 @Controller('logs')
 export class ActivityLogsController {
   constructor(

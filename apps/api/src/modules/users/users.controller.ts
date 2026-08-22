@@ -15,6 +15,7 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateUserDto } from './application/dtos/create-user.dto';
@@ -56,6 +57,7 @@ export class UsersController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Find specific user' })
+  @ApiParam({ name: 'id', description: 'External id of the user' })
   @ApiOkResponse({ description: 'User details', type: UserResponseDto })
   @ApiBusinessError(404, 'No user exists with the given external id')
   async findOne(@Param('id') id: string): Promise<UserResponseDto> {
@@ -88,6 +90,7 @@ export class UsersController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update user' })
+  @ApiParam({ name: 'id', description: 'External id of the user' })
   @ApiOkResponse({
     description: 'User successfully updated',
     type: UserResponseDto,
@@ -117,6 +120,7 @@ export class UsersController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete user' })
+  @ApiParam({ name: 'id', description: 'External id of the user' })
   @ApiOkResponse({
     description: 'User successfully soft-deleted',
     type: UserResponseDto,
@@ -148,6 +152,7 @@ export class UsersController {
 
   @Put('update-role/:id')
   @ApiOperation({ summary: 'Update user role' })
+  @ApiParam({ name: 'id', description: 'External id of the user' })
   @ApiOkResponse({
     description: 'User role successfully updated',
     type: UserResponseDto,

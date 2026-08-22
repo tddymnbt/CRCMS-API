@@ -1,5 +1,8 @@
 import { IUser } from 'src/modules/users/application/interfaces/user.interface';
-import { ITokenResponse } from './token-response.interface';
+import {
+  IRefreshTokenResponse,
+  ITokenResponse,
+} from './token-response.interface';
 
 export interface IValidateLoginResponse {
   status: {
@@ -7,5 +10,6 @@ export interface IValidateLoginResponse {
     message: string;
   };
   access?: ITokenResponse;
+  refresh?: IRefreshTokenResponse;
   data?: IUser;
 }

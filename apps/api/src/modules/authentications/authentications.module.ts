@@ -6,6 +6,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserOTPLogs } from './domain/entities/otp-logs.entity';
 import { UserAuthentications } from './domain/entities/user-auth.entity';
+import { UserRefreshTokens } from './domain/entities/user-refresh-tokens.entity';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { EmailService } from 'src/common/email/email.service';
@@ -16,14 +17,21 @@ import { TypeormAuthenticationsRepository } from './infrastructure/repositories/
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserOTPLogs, UserAuthentications]),
+    TypeOrmModule.forFeature([
+      UserOTPLogs,
+      UserAuthentications,
+      UserRefreshTokens,
+    ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: 3600 },
+        signOptions: {
+          expiresIn:
+            Number(configService.get<string>('JWT_ACCESS_EXPIRES_IN')) || 3600,
+        },
       }),
     }),
     UsersModule,

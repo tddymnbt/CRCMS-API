@@ -10,9 +10,11 @@ import {
 } from '@nestjs/common';
 import { ProductsApplicationService } from './application/services/products.application.service';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -39,6 +41,7 @@ import {
 import { ActivityLogsApplicationService } from 'src/modules/activity_logs/application/services/activity-logs.application.service';
 
 @ApiTags('products')
+@ApiBearerAuth('access-token')
 @Controller('products')
 export class ProductsController {
   constructor(
@@ -62,6 +65,7 @@ export class ProductsController {
 
   @Get('id/:id')
   @ApiOperation({ summary: 'Find specific product' })
+  @ApiParam({ name: 'id', description: 'External id of the product stock' })
   @ApiOkResponse({ description: 'Product details', type: ProductResponseDto })
   @ApiBusinessError(
     404,
@@ -102,6 +106,7 @@ export class ProductsController {
 
   @Put('update-stock/id/:id')
   @ApiOperation({ summary: 'Update product stock' })
+  @ApiParam({ name: 'id', description: 'External id of the product stock' })
   @ApiOkResponse({
     description:
       'Stock quantity adjusted via a manual increase/decrease movement. Decreasing below the available quantity fails with HTTP 400.',
@@ -134,6 +139,7 @@ export class ProductsController {
 
   @Delete('id/:id')
   @ApiOperation({ summary: 'Delete product' })
+  @ApiParam({ name: 'id', description: 'External id of the product stock' })
   @ApiOkResponse({
     description: 'Product and its stock successfully soft-deleted',
     type: ProductResponseDto,
@@ -167,6 +173,7 @@ export class ProductsController {
 
   @Put('id/:id')
   @ApiOperation({ summary: 'Update product' })
+  @ApiParam({ name: 'id', description: 'External id of the product stock' })
   @ApiOkResponse({
     description: 'Product successfully updated',
     type: ProductResponseDto,
@@ -201,6 +208,7 @@ export class ProductsController {
 
   @Post('id/:id/transactions')
   @ApiOperation({ summary: 'Get product movements' })
+  @ApiParam({ name: 'id', description: 'External id of the product stock' })
   @ApiOkResponse({
     description: 'Paginated stock movement history for the given product',
     type: ProductTransactionListResponseDto,
@@ -216,6 +224,7 @@ export class ProductsController {
 
   @Get('consignor/:id/items')
   @ApiOperation({ summary: 'Find all consignor products' })
+  @ApiParam({ name: 'id', description: 'External id of the consignor client' })
   @ApiOkResponse({
     description: 'Paginated list of products consigned by the given client',
     type: ProductListResponseDto,

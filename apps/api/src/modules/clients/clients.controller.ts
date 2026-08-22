@@ -11,9 +11,11 @@ import {
 } from '@nestjs/common';
 import { ClientsApplicationService } from './application/services/clients.application.service';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { FindClientsDto } from './application/dtos/find-all-clients.dto';
@@ -33,6 +35,7 @@ import {
 import { ActivityLogsApplicationService } from '../activity_logs/application/services/activity-logs.application.service';
 
 @ApiTags('clients')
+@ApiBearerAuth('access-token')
 @Controller('clients')
 export class ClientsController {
   constructor(
@@ -55,6 +58,7 @@ export class ClientsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Find specific client' })
+  @ApiParam({ name: 'id', description: 'External id of the client' })
   @ApiOkResponse({ description: 'Client details', type: ClientResponseDto })
   @ApiBusinessError(404, 'No client exists with the given external id')
   async findOne(@Param('id') id: string): Promise<ClientResponseDto> {
@@ -94,6 +98,7 @@ export class ClientsController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update client' })
+  @ApiParam({ name: 'id', description: 'External id of the client' })
   @ApiOkResponse({
     description: 'Client successfully updated',
     type: ClientResponseDto,
@@ -126,6 +131,7 @@ export class ClientsController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete client' })
+  @ApiParam({ name: 'id', description: 'External id of the client' })
   @ApiOkResponse({
     description: 'Client successfully soft-deleted',
     type: ClientResponseDto,

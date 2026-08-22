@@ -19,6 +19,9 @@ async function bootstrap() {
     'https://lwphsims-prod.up.railway.app',
     'https://crcms-git-uat-jerryfel13s-projects.vercel.app',
     'https://lwphsims-fe-uat.up.railway.app',
+    'http://127.0.0.1:4200',
+    'http://127.0.0.1:4300',
+    'http://localhost:4200',
   ];
 
   app.enableCors({
@@ -77,7 +80,7 @@ async function bootstrap() {
     res.redirect(301, '/api');
   });
 
-  await app.listen(3001);
+  await app.listen(3000);
   console.log('API is now running at http://localhost:3000/api');
 }
 bootstrap();

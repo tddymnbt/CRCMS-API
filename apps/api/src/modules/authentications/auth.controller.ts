@@ -9,16 +9,19 @@ import {
 } from '@nestjs/swagger';
 import { LoginDto } from './application/dtos/login.dto';
 import { ValidateLoginDto } from './application/dtos/validate-login.dto';
+import { RefreshTokenDto } from './application/dtos/refresh-token.dto';
 import { JwtAuthGuard } from 'src/common/guard/jwt-auth.guard';
 import {
   LoginResponseDto,
   LogoutResponseDto,
+  RefreshTokenResponseDto,
   ValidateLoginResponseDto,
 } from './application/dtos/auth.response.dto';
 import {
   ApiBusinessError,
   ApiValidationError,
 } from 'src/common/swagger/api-error-responses.decorator';
+import { BusinessErrorResponseDto } from 'src/common/swagger/error-response.dto';
 import { ActivityLogsApplicationService } from '../activity_logs/application/services/activity-logs.application.service';
 
 @ApiTags('auth')
@@ -46,7 +49,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify login using OTP' })
   @ApiOkResponse({
     description:
-      'Returns the authenticated user and access token on success. When the OTP is invalid/expired the endpoint still returns HTTP 200 with `status.success: false` and no `access`/`data` payload.',
+      'Returns the authenticated user, a short-lived access token and a refresh token on success. Use the refresh token with `POST /auth/refresh` when the access token expires. When the OTP is invalid/expired the endpoint still returns HTTP 200 with `status.success: false` and no `access`/`refresh`/`data` payload.',
     type: ValidateLoginResponseDto,
   })
   @ApiValidationError()
@@ -79,6 +82,32 @@ export class AuthController {
   async loginResend(@Body() dto: LoginDto): Promise<LoginResponseDto> {
     const response = await this.authService.login(dto);
     return response;
+  }
+
+  @Post('refresh')
+  @ApiOperation({
+    summary: 'Refresh access token',
+    description:
+      'Exchanges a valid, non-revoked and non-expired refresh token for a new short-lived access token. The presented refresh token is rotated (revoked) and a new refresh token is returned. Reusing a rotated refresh token revokes every active session of the user.',
+  })
+  @ApiOkResponse({
+    description: 'Returns a new access token and a new rotated refresh token.',
+    type: RefreshTokenResponseDto,
+  })
+  @ApiValidationError()
+  @ApiUnauthorizedResponse({
+    description:
+      'Missing/invalid/expired/revoked refresh token, reuse of a rotated refresh token (all sessions revoked), or inactive user',
+    type: BusinessErrorResponseDto,
+  })
+  @ApiBusinessError(
+    404,
+    'User associated with the refresh token no longer exists',
+  )
+  async refresh(
+    @Body() dto: RefreshTokenDto,
+  ): Promise<RefreshTokenResponseDto> {
+    return this.authService.refresh(dto);
   }
 
   @Post('logout')

@@ -42,6 +42,10 @@ export class ConditionDto {
   @IsNotEmpty({ message: 'Overall condition is required' })
   overall: string;
 
+  @ApiProperty({
+    example: 'Minor scratches on the bottom corners',
+    required: false,
+  })
   @IsOptional()
   @IsString({ message: 'Condition description must be a string' })
   description?: string;

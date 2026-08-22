@@ -1,5 +1,6 @@
 import { UserOTPLogs } from '../entities/otp-logs.entity';
 import { UserAuthentications } from '../entities/user-auth.entity';
+import { UserRefreshTokens } from '../entities/user-refresh-tokens.entity';
 
 export const AUTHENTICATIONS_REPOSITORY = Symbol('AUTHENTICATIONS_REPOSITORY');
 
@@ -17,4 +18,12 @@ export interface AuthenticationsRepositoryPort {
   saveUserAuth(auth: UserAuthentications): Promise<UserAuthentications>;
   deactivateToken(token: string): Promise<void>;
   findActiveAuthByJti(jti: string): Promise<UserAuthentications | null>;
+  createUserRefreshToken(
+    payload: Partial<UserRefreshTokens>,
+  ): UserRefreshTokens;
+  saveUserRefreshToken(
+    refreshToken: UserRefreshTokens,
+  ): Promise<UserRefreshTokens>;
+  findRefreshTokenByHash(hash: string): Promise<UserRefreshTokens | null>;
+  revokeAllActiveRefreshTokens(userExtId: string): Promise<void>;
 }

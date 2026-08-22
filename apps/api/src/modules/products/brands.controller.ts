@@ -8,9 +8,11 @@
   Put,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import {
@@ -28,6 +30,7 @@ import { BrandsApplicationService } from './application/services/brands.applicat
 import { ActivityLogsApplicationService } from 'src/modules/activity_logs/application/services/activity-logs.application.service';
 
 @ApiTags('product brands')
+@ApiBearerAuth('access-token')
 @Controller('products/brands')
 export class BrandsController {
   constructor(
@@ -47,6 +50,7 @@ export class BrandsController {
 
   @Get('id/:id')
   @ApiOperation({ summary: 'Get specific product brand record' })
+  @ApiParam({ name: 'id', description: 'External id of the product brand' })
   @ApiOkResponse({
     description: 'product brand details',
     type: ProductMiscResponseDto,
@@ -84,6 +88,7 @@ export class BrandsController {
 
   @Put('id/:id')
   @ApiOperation({ summary: 'Update product brand record' })
+  @ApiParam({ name: 'id', description: 'External id of the product brand' })
   @ApiOkResponse({
     description: 'product brand successfully updated',
     type: ProductMiscResponseDto,
@@ -113,6 +118,7 @@ export class BrandsController {
 
   @Delete('id/:id')
   @ApiOperation({ summary: 'Delete product brand record' })
+  @ApiParam({ name: 'id', description: 'External id of the product brand' })
   @ApiOkResponse({
     description: 'product brand successfully soft-deleted',
     type: ProductMiscResponseDto,

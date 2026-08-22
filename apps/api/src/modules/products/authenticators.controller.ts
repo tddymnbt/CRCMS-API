@@ -8,9 +8,11 @@
   Put,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import {
@@ -28,6 +30,7 @@ import { AuthenticatorsApplicationService } from './application/services/authent
 import { ActivityLogsApplicationService } from 'src/modules/activity_logs/application/services/activity-logs.application.service';
 
 @ApiTags('product authenticators')
+@ApiBearerAuth('access-token')
 @Controller('products/authenticators')
 export class AuthenticatorsController {
   constructor(
@@ -47,6 +50,10 @@ export class AuthenticatorsController {
 
   @Get('id/:id')
   @ApiOperation({ summary: 'Get specific product authenticator record' })
+  @ApiParam({
+    name: 'id',
+    description: 'External id of the product authenticator',
+  })
   @ApiOkResponse({
     description: 'product authenticator details',
     type: ProductMiscResponseDto,
@@ -90,6 +97,10 @@ export class AuthenticatorsController {
 
   @Put('id/:id')
   @ApiOperation({ summary: 'Update product authenticator record' })
+  @ApiParam({
+    name: 'id',
+    description: 'External id of the product authenticator',
+  })
   @ApiOkResponse({
     description: 'product authenticator successfully updated',
     type: ProductMiscResponseDto,
@@ -125,6 +136,10 @@ export class AuthenticatorsController {
 
   @Delete('id/:id')
   @ApiOperation({ summary: 'Delete product authenticator record' })
+  @ApiParam({
+    name: 'id',
+    description: 'External id of the product authenticator',
+  })
   @ApiOkResponse({
     description: 'product authenticator successfully soft-deleted',
     type: ProductMiscResponseDto,

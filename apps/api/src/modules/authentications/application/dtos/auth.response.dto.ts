@@ -42,6 +42,21 @@ export class TokenResponseDto {
   tokenExpiry: string;
 }
 
+export class RefreshTokenDetailsDto {
+  @ApiProperty({
+    description:
+      'Opaque refresh token. Send it to `POST /auth/refresh` to obtain a new access token. Store securely; it is never logged.',
+    example: 'YzJkOWE3ZTQtOGIxZD00Y2M1LWJmMjktZTc4YTQyNzM5YWFhLXhYWHhYWFhY',
+  })
+  refresh_token: string;
+
+  @ApiProperty({
+    description: 'Refresh token expiry timestamp (Asia/Manila timezone)',
+    example: '2025-06-19 10:15:30',
+  })
+  refresh_token_expiry: string;
+}
+
 export class ValidateLoginResponseDto {
   @ApiProperty({ type: ResponseStatusDto })
   status: ResponseStatusDto;
@@ -53,10 +68,35 @@ export class ValidateLoginResponseDto {
   access?: TokenResponseDto;
 
   @ApiPropertyOptional({
+    description:
+      'Refresh token details. Present only when validation succeeds. Use it to obtain a new access token via `POST /auth/refresh`.',
+    type: RefreshTokenDetailsDto,
+  })
+  refresh?: RefreshTokenDetailsDto;
+
+  @ApiPropertyOptional({
     description: 'Authenticated user. Present only when validation succeeds.',
     type: UserDto,
   })
   data?: UserDto;
+}
+
+export class RefreshTokenResponseDto {
+  @ApiProperty({ type: ResponseStatusDto })
+  status: ResponseStatusDto;
+
+  @ApiProperty({
+    description: 'New short-lived access token details',
+    type: TokenResponseDto,
+  })
+  access: TokenResponseDto;
+
+  @ApiProperty({
+    description:
+      'New rotated refresh token. The previously used refresh token is revoked and cannot be used again.',
+    type: RefreshTokenDetailsDto,
+  })
+  refresh: RefreshTokenDetailsDto;
 }
 
 export class LogoutResponseDto {

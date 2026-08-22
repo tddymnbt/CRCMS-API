@@ -1,8 +1,10 @@
 import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { SalesDto } from './application/dtos/create-sales.dto';
@@ -28,6 +30,7 @@ import { SalesApplicationService } from './application/services/sales.applicatio
 import { ActivityLogsApplicationService } from '../activity_logs/application/services/activity-logs.application.service';
 
 @ApiTags('sales')
+@ApiBearerAuth('access-token')
 @Controller('sales')
 export class SalesController {
   constructor(
@@ -157,6 +160,7 @@ export class SalesController {
 
   @Get('client/:id/transactions')
   @ApiOperation({ summary: 'Find all client sales transactions' })
+  @ApiParam({ name: 'id', description: 'External id of the client' })
   @ApiOkResponse({
     description: "Paginated list of the given client's sale transactions",
     type: SaleListResponseDto,
@@ -175,6 +179,7 @@ export class SalesController {
 
   @Get('id/:id')
   @ApiOperation({ summary: 'Find specific sale' })
+  @ApiParam({ name: 'id', description: 'External id of the sale transaction' })
   @ApiOkResponse({
     description: 'Sale transaction details',
     type: SaleResponseDto,
@@ -277,6 +282,7 @@ export class SalesController {
 
   @Put('layaway/extend-due-date/:id')
   @ApiOperation({ summary: 'Extend layaway due date' })
+  @ApiParam({ name: 'id', description: 'External id of the sale transaction' })
   @ApiOkResponse({
     description: 'Layaway due date successfully extended',
     type: SaleResponseDto,

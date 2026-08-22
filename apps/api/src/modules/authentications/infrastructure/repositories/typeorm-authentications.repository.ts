@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { UserOTPLogs } from '../../domain/entities/otp-logs.entity';
 import { UserAuthentications } from '../../domain/entities/user-auth.entity';
+import { UserRefreshTokens } from '../../domain/entities/user-refresh-tokens.entity';
 import {
   AuthenticationsRepositoryPort,
   OtpLogFilter,
@@ -18,6 +19,9 @@ export class TypeormAuthenticationsRepository
 
     @InjectRepository(UserAuthentications)
     private readonly authRepo: Repository<UserAuthentications>,
+
+    @InjectRepository(UserRefreshTokens)
+    private readonly refreshTokenRepo: Repository<UserRefreshTokens>,
   ) {}
 
   createOtpLog(payload: Partial<UserOTPLogs>): UserOTPLogs {
@@ -56,5 +60,30 @@ export class TypeormAuthenticationsRepository
     return this.authRepo.findOne({
       where: { token_jti: jti, is_active: true },
     });
+  }
+
+  createUserRefreshToken(
+    payload: Partial<UserRefreshTokens>,
+  ): UserRefreshTokens {
+    return this.refreshTokenRepo.create(payload);
+  }
+
+  saveUserRefreshToken(
+    refreshToken: UserRefreshTokens,
+  ): Promise<UserRefreshTokens> {
+    return this.refreshTokenRepo.save(refreshToken);
+  }
+
+  findRefreshTokenByHash(hash: string): Promise<UserRefreshTokens | null> {
+    return this.refreshTokenRepo.findOne({
+      where: { token_hash: hash },
+    });
+  }
+
+  async revokeAllActiveRefreshTokens(userExtId: string): Promise<void> {
+    await this.refreshTokenRepo.update(
+      { user_ext_id: userExtId, revoked_at: IsNull() },
+      { revoked_at: new Date() },
+    );
   }
 }

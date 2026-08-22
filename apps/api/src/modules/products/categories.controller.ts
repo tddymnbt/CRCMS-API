@@ -8,9 +8,11 @@
   Put,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import {
@@ -28,6 +30,7 @@ import { CategoriesApplicationService } from './application/services/categories.
 import { ActivityLogsApplicationService } from 'src/modules/activity_logs/application/services/activity-logs.application.service';
 
 @ApiTags('product categories')
+@ApiBearerAuth('access-token')
 @Controller('products/categories')
 export class CategoriesController {
   constructor(
@@ -47,6 +50,7 @@ export class CategoriesController {
 
   @Get('id/:id')
   @ApiOperation({ summary: 'Get specific product category record' })
+  @ApiParam({ name: 'id', description: 'External id of the product category' })
   @ApiOkResponse({
     description: 'product category details',
     type: ProductMiscResponseDto,
@@ -87,6 +91,7 @@ export class CategoriesController {
 
   @Put('id/:id')
   @ApiOperation({ summary: 'Update product category record' })
+  @ApiParam({ name: 'id', description: 'External id of the product category' })
   @ApiOkResponse({
     description: 'product category successfully updated',
     type: ProductMiscResponseDto,
@@ -119,6 +124,7 @@ export class CategoriesController {
 
   @Delete('id/:id')
   @ApiOperation({ summary: 'Delete product category record' })
+  @ApiParam({ name: 'id', description: 'External id of the product category' })
   @ApiOkResponse({
     description: 'product category successfully soft-deleted',
     type: ProductMiscResponseDto,

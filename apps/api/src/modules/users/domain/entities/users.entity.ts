@@ -1,6 +1,7 @@
 import { ActivityLog } from 'src/modules/activity_logs/domain/entities/activity-log.entity';
 import { UserOTPLogs } from 'src/modules/authentications/domain/entities/otp-logs.entity';
 import { UserAuthentications } from 'src/modules/authentications/domain/entities/user-auth.entity';
+import { UserRefreshTokens } from 'src/modules/authentications/domain/entities/user-refresh-tokens.entity';
 import { UserRoles } from 'src/modules/rbac/domain/entities/user-roles.entity';
 import {
   Entity,
@@ -68,6 +69,9 @@ export class Users {
     { cascade: true },
   )
   authentications: UserAuthentications[];
+
+  @OneToMany(() => UserRefreshTokens, (refreshToken) => refreshToken.user)
+  refresh_tokens: UserRefreshTokens[];
 
   @OneToMany(() => UserRoles, (role) => role.user)
   roles: UserRoles[];
